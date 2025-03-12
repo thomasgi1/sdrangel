@@ -1,6 +1,7 @@
 name: SDRangel Mac release build
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - mac_ci
