@@ -1,8 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////////
-// Copyright (C) 2012 maintech GmbH, Otto-Hahn-Str. 15, 97204 Hoechberg, Germany //
-// written by Christian Daniel                                                   //
-// Copyright (C) 2015-2019, 2022 Edouard Griffiths, F4EXB <f4exb06@gmail.com>    //
-// Copyright (C) 2021 Jon Beniston, M7RCE <jon@beniston.com>                     //
+// Copyright (C) 2026 Jon Beniston, M7RCE <jon@beniston.com>                     //
 //                                                                               //
 // This program is free software; you can redistribute it and/or modify          //
 // it under the terms of the GNU General Public License as published by          //
@@ -18,39 +15,42 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.          //
 ///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef INCLUDE_STARTRACKERSETTINGSDIALOG_H
-#define INCLUDE_STARTRACKERSETTINGSDIALOG_H
+#ifndef INCLUDE_SPICE_EPHEMERIDES_H_
+#define INCLUDE_SPICE_EPHEMERIDES_H_
 
-#include "ui_startrackersettingsdialog.h"
-#include "startrackersettings.h"
-#include "spiceephemerides.h"
+#include <QObject>
+#include <QWidget>
 
-class StarTrackerSettingsDialog : public QDialog {
+#include "gui/httpdownloadmanagergui.h"
+
+class SpiceEphemerides : public QObject
+{
     Q_OBJECT
 
 public:
-    explicit StarTrackerSettingsDialog(StarTrackerSettings* settings, QList<QString>& settingsKeys, QWidget* parent = 0);
-    ~StarTrackerSettingsDialog();
 
-   StarTrackerSettings *m_settings;
-   QList<QString>& m_settingsKeys;
-
-private slots:
-    void on_addEphemeris_clicked();
-    void on_removeEphemeris_clicked();
-    void on_useDefaultEphemeridies_clicked();
-    void on_addSolarSystemBody_clicked();
-    void on_removeSolarSystemBody_clicked();
-    void accept();
-    void allDownloadsComplete();
+    explicit SpiceEphemerides(QWidget *parentWidget = nullptr);
+    bool download(const QStringList &emphemerides);
+    bool checkDownloaded(const QStringList &emphemerides) const;
+    QStringList getTargets(const QStringList &ephemerisURL);
+    static QStringList getEphemeridesFiles(const QStringList &emphemeridesURLs);
 
 private:
-    Ui::StarTrackerSettingsDialog* ui;
-    SpiceEphemerides m_spiceEphemerides;
 
-    QStringList getEphemerides() const;
-    bool downloadEphemerides();
-    void selectSolarSystemBody();
+    static QString urlToFilename(const QString &ephemerisURL);
+
+    QWidget *m_parentWidget;
+    HttpDownloadManagerGUI m_dlm;
+
+    QStringList m_pendingDownloads;
+    QStringList m_completedDownloads;
+
+private slots:
+    void downloadComplete(const QString &filename, bool success, const QString &url, const QString &errorMessage);
+
+signals:
+    void allDownloadsComplete();
+
 };
 
-#endif // INCLUDE_STARTRACKERSETTINGSDIALOG_H
+#endif // INCLUDE_SPICE_EPHEMERIDES_H_
