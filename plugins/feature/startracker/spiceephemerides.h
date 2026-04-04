@@ -19,9 +19,13 @@
 #define INCLUDE_SPICE_EPHEMERIDES_H_
 
 #include <QObject>
-#include <QWidget>
 
+#ifdef SERVER_MODE
+#include "util/httpdownloadmanager.h"
+#else
+#include <QWidget>
 #include "gui/httpdownloadmanagergui.h"
+#endif
 
 class SpiceEphemerides : public QObject
 {
@@ -29,7 +33,7 @@ class SpiceEphemerides : public QObject
 
 public:
 
-    explicit SpiceEphemerides(QWidget *parentWidget = nullptr);
+    explicit SpiceEphemerides(QObject *parentWidget = nullptr);
     bool download(const QStringList &emphemerides);
     bool checkDownloaded(const QStringList &emphemerides) const;
     QStringList getTargets(const QStringList &ephemerisURL);
@@ -39,8 +43,12 @@ private:
 
     static QString urlToFilename(const QString &ephemerisURL);
 
-    QWidget *m_parentWidget;
+    QObject *m_parentWidget;
+#ifdef SERVER_MODE
+    HttpDownloadManager m_dlm;
+#else
     HttpDownloadManagerGUI m_dlm;
+#endif
 
     QStringList m_pendingDownloads;
     QStringList m_completedDownloads;

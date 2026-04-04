@@ -22,7 +22,7 @@
 #include "spiceephemerides.h"
 #include "spice.h"
 
-SpiceEphemerides::SpiceEphemerides(QWidget *parentWidget) :
+SpiceEphemerides::SpiceEphemerides(QObject *parentWidget) :
     m_parentWidget(parentWidget)
 {
     connect(&m_dlm, &HttpDownloadManager::downloadComplete, this, &SpiceEphemerides::downloadComplete);
@@ -55,7 +55,11 @@ bool SpiceEphemerides::download(const QStringList &emphemerides)
                 {
                     qDebug() << "Downloading ephemeris from" << ephemerisURL << "to" << ephemerisFilename;
                     m_pendingDownloads.append(ephemerisFilename);
-                    m_dlm.download(ephemerisURL, ephemerisFilename, m_parentWidget);
+#ifdef SERVER_MODE
+                    m_dlm.download(ephemerisURL, ephemerisFilename);
+#else
+                    m_dlm.download(ephemerisURL, ephemerisFilename, (QWidget *) m_parentWidget);
+#endif
                     downloadRequired = true;
                 }
                 else

@@ -396,9 +396,9 @@ bool calculateJupiterMoonPhase(const QString& moon, double et, double latitude, 
     SpiceDouble xform[3][3];
     pxform_c("J2000", "IAU_JUPITER", te, xform);
 
-    SpiceDouble io_bf[3], obs_bf[3];
-    mxv_c(xform, moonPosJupiterJ2000, io_bf);
-    mxv_c(xform, obsPosJupiterJ2000, obs_bf);
+    SpiceDouble moonBodyFixed[3], obsBodyFixed[3];
+    mxv_c(xform, moonPosJupiterJ2000, moonBodyFixed);
+    mxv_c(xform, obsPosJupiterJ2000, obsBodyFixed);
 
     // Jupiter radii
     SpiceInt nrad;
@@ -415,16 +415,13 @@ bool calculateJupiterMoonPhase(const QString& moon, double et, double latitude, 
 
     // Moon planetographic longitude using the same convention as CML
     SpiceDouble moonLonRad, moonLatRad, moonAltKm;
-    recpgr_c("JUPITER", io_bf, re_j, f_j, &moonLonRad, &moonLatRad, &moonAltKm);
+    recpgr_c("JUPITER", moonBodyFixed, re_j, f_j, &moonLonRad, &moonLatRad, &moonAltKm);
     SpiceDouble moonLonDeg = normalize360(Units::radiansToDegrees(moonLonRad));
 
     // CML (sub-observer planetographic longitude)
     SpiceDouble subObsLonRad, subObsLatRad, subObsAltKm;
-    recpgr_c("JUPITER", obs_bf, re_j, f_j, &subObsLonRad, &subObsLatRad, &subObsAltKm);
+    recpgr_c("JUPITER", obsBodyFixed, re_j, f_j, &subObsLonRad, &subObsLatRad, &subObsAltKm);
     cml = normalize360(Units::radiansToDegrees(subObsLonRad));
-
-    // Moon offset from CML
-    SpiceDouble delta_deg = normalize180(moonLonDeg - cml);
 
     // Moon phase (0 deg on far side)
     phase = normalize360(cml - moonLonDeg + 180);
