@@ -3239,7 +3239,7 @@ void StarTrackerGUI::updateSolarFlux(bool all)
 
         if (m_dlm.confirmDownload(solarFluxFile, nullptr, 0))
         {
-            QString urlString = QString("https://www.sws.bom.gov.au/Category/World Data Centre/Data Display and Download/Solar Radio/station/learmonth/SRD/%1/L%2.SRD")
+            QString urlString = QString("https://downloads.sws.bom.gov.au/wdc/wdc_solradio/data/learmonth/SRD/%1/L%2.SRD")
                                     .arg(today.year()).arg(today.toString("yyMMdd"));
             m_dlm.download(QUrl(urlString), solarFluxFile, this);
         }
