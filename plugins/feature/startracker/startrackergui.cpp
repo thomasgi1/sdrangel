@@ -983,6 +983,8 @@ void StarTrackerGUI::updateForTarget()
 
 void StarTrackerGUI::on_target_currentIndexChanged(int index)
 {
+    (void) index;
+
     QString text = ui->target->currentText();
     if (!text.isEmpty())
     {
@@ -1623,26 +1625,13 @@ void StarTrackerGUI::createSolarSystemScene()
     m_solarSystemScene = new QGraphicsScene(ui->image);
     m_solarSystemScene->setBackgroundBrush(QBrush(Qt::black));
 
-    QDateTime dt = m_settings.getDateTime();
-    double t;
-    t = (Astronomy::julianDate(dt) - 2451545.0) / 365250.0;
-
     m_solarSystemLabelFont = m_solarSystemScene->font();
     m_solarSystemLabelFont.setPointSize(6);
     m_solarSystemLabelFontMetrics = QFontMetrics(m_solarSystemLabelFont);
 
-    if (m_settings.m_logScale)
-    {
-        // Pluto is ~56 from Sun on log scale
-        double r = 57;
-        m_solarSystemScene->setSceneRect(-r, -r, r * 2, r * 2);
-    }
-    else
-    {
-        // Mercury is 0.4AU. Neptune is 30 AU
-        double scale = 20;
-        //m_solarSystemScene->setSceneRect(-30 * scale, -30 * scale, 30 * 2 * scale, 30 * 2 * scale);
-    }
+    // Pluto is ~56 from Sun on log scale
+    const double r = 57;
+    m_solarSystemScene->setSceneRect(-r, -r, r * 2, r * 2);
 }
 
 QPixmap *StarTrackerGUI::getPlanetPixmap(const QString& name)
@@ -3298,6 +3287,21 @@ void StarTrackerGUI::on_night_clicked(bool checked)
 void StarTrackerGUI::on_logScale_clicked(bool checked)
 {
     m_settings.m_logScale = checked;
+
+    if (m_settings.m_logScale)
+    {
+        // Pluto is ~56 from Sun on log scale
+        const double r = 57;
+        m_solarSystemScene->setSceneRect(-r, -r, r * 2, r * 2);
+    }
+    else
+    {
+        // Mercury is 0.4AU. Neptune is 30 AU
+        const double max = 32.0;
+        const double pixelScale = 20.0;
+        m_solarSystemScene->setSceneRect(-max * pixelScale, -max * pixelScale, 2.0 * max * pixelScale, 2.0 * max * pixelScale);
+    }
+
     plotChart();
     m_settingsKeys.append("logScale");
     applySettings();

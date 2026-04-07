@@ -75,6 +75,10 @@ bool SpiceEphemerides::download(const QStringList &emphemerides)
 
 void SpiceEphemerides::downloadComplete(const QString &filename, bool success, const QString &url, const QString &errorMessage)
 {
+    (void) success;
+    (void) url;
+    (void) errorMessage;
+
     m_completedDownloads.append(filename);
     if (m_completedDownloads == m_pendingDownloads)
     {
