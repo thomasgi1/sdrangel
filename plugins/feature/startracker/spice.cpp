@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////////////
 // Copyright (C) 2026 Jon Beniston, M7RCE <jon@beniston.com>                     //
 //                                                                               //
 // This program is free software; you can redistribute it and/or modify          //
@@ -91,16 +91,6 @@ static SpiceDouble normalize360(SpiceDouble deg)
         d += 360.0;
     }
     return d;
-}
-
-// Normalize angle to (-180, +180]
-static SpiceDouble normalize180(SpiceDouble deg)
-{
-    SpiceDouble d = fmod(deg + 180.0, 360.0);
-    if (d < 0.0) {
-        d += 360.0;
-    }
-    return d - 180.0;
 }
 
 // Compute topocentric observer position in J2000 at ET
@@ -214,32 +204,6 @@ QStringList getSPICETargets(const QString& file)
     return targets;
 }
 
-// Get position of named body relative to Solar System Barycentre. No abberation correction
-bool getSSBPositionFromSPICE(const QString& name, double et, QVector3D &positionKm)
-{
-    SpiceDouble posJ2000[3];
-    SpiceDouble lightTime;
-    const QByteArray nameBA = name.toLatin1();
-    const char *nameStr = nameBA.constData();
-
-    // Get position of named body, relative to SSB.
-    spkpos_c(nameStr, et, "J2000", "NONE", "SOLAR SYSTEM BARYCENTER", posJ2000, &lightTime);
-    if (!failed_c())
-    {
-        positionKm.setX(posJ2000[0]);
-        positionKm.setY(posJ2000[1]);
-        positionKm.setZ(posJ2000[2]);
-
-        return true;
-    }
-    else
-    {
-        qDebug() << "StarTrackerWorker::calculateSolarSystemPositions: Failed to get position for" << name;
-        reset_c();
-        return false;
-    }
-}
-
 // Calculate azimuth and elevation of a target body from a position on Earth using SPICE
 bool getAzElFromSPICE(const QString& target, double et, double latitude, double longitude, double altitudeKm, double &azimuth, double &elevation)
 {
@@ -314,7 +278,7 @@ bool getRADecFromSPICE(const QString& target, double et, double &ra, double &dec
 }
 
 // Calculate Jupiter's CML (Central Meridian Longitude) as seen from a location on Earth and the phase of the given Jovian moon (IO or GANYMEDE)
-bool calculateJupiterMoonPhase(const QString& moon, double et, double latitude, double longitude, double altitudeMetres, double &cml, double &phase)
+bool spiceJupiterMoonPhase(const QString& moon, double et, double latitude, double longitude, double altitudeMetres, double &cml, double &phase)
 {
     const QByteArray moonBA = moon.toUpper().toLatin1();
     const char *moonName = moonBA.data();
@@ -425,6 +389,112 @@ bool calculateJupiterMoonPhase(const QString& moon, double et, double latitude, 
 
     // Moon phase (0 deg on far side)
     phase = normalize360(cml - moonLonDeg + 180);
+
+    return true;
+}
+
+// Get position of named body relative to Sun, in ECLIPJ2000 reference frame. No abberation correction.
+bool spicePosition(const QString& name, double et, QVector3D &positionKm)
+{
+    SpiceDouble pos[3];
+    SpiceDouble lightTime;
+    const QByteArray nameBA = name.toLatin1();
+    const char *nameStr = nameBA.constData();
+
+    // Get position of named body
+    spkpos_c(nameStr, et, "ECLIPJ2000", "NONE", "SUN", pos, &lightTime);
+    if (!failed_c())
+    {
+        positionKm.setX(pos[0]);
+        positionKm.setY(pos[1]);
+        positionKm.setZ(pos[2]);
+
+        return true;
+    }
+    else
+    {
+        qDebug() << "spicePosition: Failed to get position for" << name;
+        reset_c();
+        return false;
+    }
+}
+
+// Convert orbital elements to perifocal (PQW) coordinate system
+static void orbitalElementsToPerifocal(SpiceDouble omega, SpiceDouble inc, SpiceDouble argp,
+    SpiceDouble p[3], SpiceDouble q[3])
+{
+    SpiceDouble cO = cos(omega);
+    SpiceDouble sO = sin(omega);
+    SpiceDouble ci = cos(inc);
+    SpiceDouble si = sin(inc);
+    SpiceDouble cw = cos(argp);
+    SpiceDouble sw = sin(argp);
+
+    // Phat (toward periapsis)
+    p[0] =  cO * cw - sO * sw * ci;
+    p[1] =  sO * cw + cO * sw * ci;
+    p[2] =  sw * si;
+
+    // Qhat (90 deg ahead in orbit plane)
+    q[0] = -cO * sw - sO * cw * ci;
+    q[1] = -sO * sw + cO * cw * ci;
+    q[2] =  cw * si;
+}
+
+// Get orbital path around the Sun, in XY plane of ECLIPJ2000 reference frame.
+bool spiceOrbit(const QString& name, double et, QList<QPointF> &orbit)
+{
+    const QByteArray nameBA = name.toUpper().toLatin1();
+    const char *target = nameBA.data();
+
+    // Sun relative state, expressed in ECLIPJ2000
+    SpiceDouble state[6], lt;
+    spkezr_c(target, et, "ECLIPJ2000", "NONE", "SUN", state, &lt);
+
+    // Sun GM (gravitational parameter = G * M)
+    SpiceInt dim;
+    SpiceDouble mu;
+    bodvrd_c("SUN", "GM", 1, &dim, &mu);
+
+    // Osculating conic elements
+    SpiceDouble elts[8];
+    oscelt_c(state, et, mu, elts);
+
+    SpiceDouble rp    = elts[0]; // perifocal distance (km)
+    SpiceDouble e     = elts[1]; // eccentricity
+    SpiceDouble inc   = elts[2]; // inclination (rad)
+    SpiceDouble omega = elts[3]; // longitude of ascending node (rad)
+    SpiceDouble argp  = elts[4]; // argument of periapsis (rad)
+
+    if (e >= 1.0)
+    {
+        qDebug() << "spiceOrbit: Not an ellipse" << name;
+        return false;
+    }
+
+    SpiceDouble a = rp / (1.0 - e); // semi-major axis in orbital plane
+    SpiceDouble b = a * sqrt(1.0 - e * e); // semi-minor axis in orbital plane
+
+    SpiceDouble pHat[3], qHat[3];
+    orbitalElementsToPerifocal(omega, inc, argp, pHat, qHat);
+
+    const int N = 1000; // Could vary this with zoom level. 1k good enough when zoomed to orbit of the Moon around Earth
+    for (int k = 0; k <= N; k++)
+    {
+        const double E = 2.0 * M_PI * (double) k / (double) N;
+
+        // Ellipse in PQW with Sun at focus
+        double xp = a * (cos(E) - e);
+        double yp = b * sin(E);
+
+        // Rotate into ECLIPJ2000
+        double x = xp * pHat[0] + yp * qHat[0];
+        double y = xp * pHat[1] + yp * qHat[1];
+
+        QPointF point = {x, y};
+
+        orbit.append(point);
+    }
 
     return true;
 }

@@ -27,6 +27,7 @@
 const QStringList StarTrackerSettings::m_defaultSpiceEphemerides = {
     "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls",
     "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/pck00011.tpc",
+    "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/pck/gm_de440.tpc",
     "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de440.bsp",
     "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/satellites/jup365.bsp",
 };

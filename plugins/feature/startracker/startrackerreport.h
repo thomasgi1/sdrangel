@@ -145,22 +145,25 @@ public:
         QDateTime getDateTime() const { return m_dateTime; }
         const QStringList &getNames() const { return m_names; }
         const QList<QVector3D> &getPositions() const { return m_positions; }
+        const QList<QList<QPointF>> &getOrbit() const { return m_orbit; }
 
-        static MsgReportSolarSystemPositions* create(const QDateTime& dateTime, const QStringList &names, const QList<QVector3D> &positions)
+        static MsgReportSolarSystemPositions* create(const QDateTime& dateTime, const QStringList &names, const QList<QVector3D> &positions, QList<QList<QPointF>> &orbit)
         {
-            return new MsgReportSolarSystemPositions(dateTime, names, positions);
+            return new MsgReportSolarSystemPositions(dateTime, names, positions, orbit);
         }
 
     private:
         QDateTime m_dateTime;
         QStringList m_names;
         QList<QVector3D> m_positions;
+        QList<QList<QPointF>> m_orbit;
 
-        MsgReportSolarSystemPositions(const QDateTime& dateTime, const QStringList &names, const QList<QVector3D> &positions) :
+        MsgReportSolarSystemPositions(const QDateTime& dateTime, const QStringList &names, const QList<QVector3D> &positions, const QList<QList<QPointF>> &orbit) :
             Message(),
             m_dateTime(dateTime),
             m_names(names),
-            m_positions(positions)
+            m_positions(positions),
+            m_orbit(orbit)
         {
         }
 

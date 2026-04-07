@@ -28,9 +28,10 @@ void spiceUnlock();
 
 bool dateTimeToET(const QDateTime& dateTime, double &et);
 QStringList getSPICETargets(const QString& file);
-bool getSSBPositionFromSPICE(const QString& name, double et, QVector3D &position);
 bool getAzElFromSPICE(const QString& target, double et, double latitude, double longitude, double altitudeKm, double &azimuth, double &elevation);
 bool getRADecFromSPICE(const QString& target, double et, double &ra, double &dec);
-bool calculateJupiterMoonPhase(const QString& moon, double et, double latitude, double longitude, double altitudeMetres, double& cml, double &phase);
+bool spiceJupiterMoonPhase(const QString& moon, double et, double latitude, double longitude, double altitudeMetres, double& cml, double &phase);
+bool spicePosition(const QString& name, double et, QVector3D &position);
+bool spiceOrbit(const QString& name, double et, QList<QPointF> &orbit);
 
 #endif // STARTRACKER_SPICE_H

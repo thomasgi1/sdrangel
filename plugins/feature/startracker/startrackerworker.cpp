@@ -1062,6 +1062,12 @@ void StarTrackerWorker::calculateSolarSystemPositions(const QDateTime& dateTime)
 {
     QStringList bodyNames;
     QList<QVector3D> bodyPositions;
+    QList<QList<QPointF>> orbits;
+
+    static const QStringList planets = {
+        "MERCURY", "VENUS", "EARTH", "MARS", "JUPITER", "SATURN", "URANUS", "NEPTUNE",
+        "MERCURY BARYCENTER", "VENUS BARYCENTER", "EARTH BARYCENTER", "MARS BARYCENTER", "JUPITER BARYCENTER", "SATURN BARYCENTER", "URANUS BARYCENTER", "NEPTUNE BARYCENTER"
+    };
 
     double et;
     if (!dateTimeToET(dateTime, et)) {
@@ -1072,17 +1078,23 @@ void StarTrackerWorker::calculateSolarSystemPositions(const QDateTime& dateTime)
     {
         QVector3D positionKm;
 
-        if (getSSBPositionFromSPICE(body, et, positionKm))
+        if (spicePosition(body, et, positionKm))
         {
             QVector3D position(positionKm[0], positionKm[1], positionKm[2]);
 
             bodyNames.append(body);
             bodyPositions.append(position);
+
+            QList<QPointF> orbit;
+            if (planets.contains(body)) {
+                spiceOrbit(body, et, orbit);
+            }
+            orbits.append(orbit);
         }
     }
 
     if (getMessageQueueToGUI()) {
-        getMessageQueueToGUI()->push(StarTrackerReport::MsgReportSolarSystemPositions::create(dateTime, bodyNames, bodyPositions));
+        getMessageQueueToGUI()->push(StarTrackerReport::MsgReportSolarSystemPositions::create(dateTime, bodyNames, bodyPositions, orbits));
     }
 }
 
@@ -1111,9 +1123,9 @@ void StarTrackerWorker::calculateJupiterParameters(const QDateTime& dateTime)
         if (getAzElFromSPICE("JUPITER", et, m_settings.m_latitude, m_settings.m_longitude, 0.0, az, el))
         {
             // Calculate Jupiter CML and phase of Moons
-            if (calculateJupiterMoonPhase("IO", et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, ioPhase))
+            if (spiceJupiterMoonPhase("IO", et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, ioPhase))
             {
-                if (calculateJupiterMoonPhase("GANYMEDE", et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, ganymedePhase))
+                if (spiceJupiterMoonPhase("GANYMEDE", et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, ganymedePhase))
                 {
                     if (getMessageQueueToGUI()) {
                         getMessageQueueToGUI()->push(StarTrackerReport::MsgReportJupiter::create(dateTime, az, el, cml, ioPhase, ganymedePhase));
@@ -1138,7 +1150,7 @@ void StarTrackerWorker::calculateJupiterParameters(const QDateTime& dateTime)
                 {
                     if (el > 0.0)
                     {
-                        if (calculateJupiterMoonPhase(moon, et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, moonPhase))
+                        if (spiceJupiterMoonPhase(moon, et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, moonPhase))
                         {
                             StarTrackerReport::JupiterData jd = {dt, az, el};
                             StarTrackerReport::JupiterMoonData md = {cml, moonPhase};
@@ -1169,7 +1181,7 @@ void StarTrackerWorker::calculateJupiterParameters(const QDateTime& dateTime)
                 {
                     if (el > 0.0)
                     {
-                        if (calculateJupiterMoonPhase(moon, et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, moonPhase))
+                        if (spiceJupiterMoonPhase(moon, et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, moonPhase))
                         {
                             StarTrackerReport::JupiterData jd = {dt, az, el};
                             StarTrackerReport::JupiterMoonData id = {cml, moonPhase};
@@ -1216,7 +1228,7 @@ void StarTrackerWorker::calculateJupiterParameters(const QDateTime& dateTime)
                 {
                     if (el > 0.0)
                     {
-                        if (calculateJupiterMoonPhase(moon, et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, moonPhase))
+                        if (spiceJupiterMoonPhase(moon, et, m_settings.m_latitude, m_settings.m_longitude, 0.0, cml, moonPhase))
                         {
                             StarTrackerReport::JupiterData jd = {dt, az, el};
                             StarTrackerReport::JupiterMoonData id = {cml, moonPhase};

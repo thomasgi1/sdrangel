@@ -172,7 +172,7 @@ bool StarTrackerGUI::handleMessage(const Message& message)
     else if (StarTrackerReport::MsgReportSolarSystemPositions::match(message))
     {
         StarTrackerReport::MsgReportSolarSystemPositions& report = (StarTrackerReport::MsgReportSolarSystemPositions&) message;
-        updateSolarSystemPositions(report.getNames(), report.getPositions());
+        updateSolarSystemPositions(report.getNames(), report.getPositions(), report.getOrbit());
         return true;
     }
     else if (StarTrackerReport::MsgReportJupiter::match(message))
@@ -1702,23 +1702,13 @@ static void logScale(QVector3D &p)
     p.setZ(r * std::cos(el));
 }
 
-
-
-QRectF getVisibleRect( QGraphicsView * view )
-{
-    QPointF A = view->mapToScene( QPoint(0, 0) );
-    QPointF B = view->mapToScene( QPoint(
-        view->viewport()->width(),
-        view->viewport()->height() ));
-    return QRectF( A, B );
-}
-
-
-void StarTrackerGUI::updateSolarSystemPositions(const QStringList &names, const QList<QVector3D> &positions)
+void StarTrackerGUI::updateSolarSystemPositions(const QStringList &names, const QList<QVector3D> &positions, const QList<QList<QPointF>> &orbits)
 {
     const double kmToAU = 6.68459e-9;   // Convert position from kM to AU
     const double pixelScale = 20.0;     // Mercury is 0.4AU. Neptune is 30 AU
     bool scale = false;
+    QPen orbitPen(Qt::gray);
+    orbitPen.setWidth(0);
 
     for (int i = 0; i < names.size(); i++)
     {
@@ -1738,9 +1728,18 @@ void StarTrackerGUI::updateSolarSystemPositions(const QStringList &names, const 
             QBrush brush(QColor(200, 200, 200));
             item = new SolarSystemItem();
             item->m_textItem = m_solarSystemScene->addText(name, m_solarSystemLabelFont);
+            item->m_textItem->setZValue(2);
             item->m_scale = getScale(name.toLower());
             item->m_pixmapItem = m_solarSystemScene->addPixmap(*pixmap);
             item->m_pixmapItem->setOffset(-pixmap->width() / 2, -pixmap->height() / 2);
+            item->m_pixmapItem->setZValue(1);
+
+            if (orbits[i].size() > 0) {
+                item->m_orbitItem = m_solarSystemScene->addPolygon(QPolygonF(), orbitPen);
+            } else {
+                item->m_orbitItem  = nullptr;
+            }
+
             m_solarSystemItems.insert(names[i], item);
             scale = true;
         }
@@ -1751,6 +1750,33 @@ void StarTrackerGUI::updateSolarSystemPositions(const QStringList &names, const 
             logScale(scaledPos);
         } else {
             scaledPos = pixelScale * kmToAU * scaledPos;
+        }
+
+        // Draw an ellipse for planet's orbit
+        if (item->m_orbitItem)
+        {
+            QPolygonF polygon;
+
+            for (int j = 0; j < orbits[i].size(); j++)
+            {
+                QPointF point = orbits[i][j];
+
+                if (m_settings.m_logScale)
+                {
+                    QVector3D v = {(float) point.x(), (float) point.y(), 0.0f};
+                    logScale(v);
+                    point.setX(v.x());
+                    point.setY(v.y());
+                }
+                else
+                {
+                    point = pixelScale * kmToAU * point;
+                }
+
+                polygon << point;
+            }
+
+            item->m_orbitItem->setPolygon(polygon);
         }
 
         // Position label to right
@@ -1774,6 +1800,7 @@ void StarTrackerGUI::updateSolarSystemPositions(const QStringList &names, const 
             SolarSystemItem* item = itr.value();
             m_solarSystemScene->removeItem(item->m_pixmapItem);
             m_solarSystemScene->removeItem(item->m_textItem);
+            m_solarSystemScene->removeItem(item->m_orbitItem);
             delete item;
             itr.remove();
         }
@@ -1868,7 +1895,6 @@ void StarTrackerGUI::centerOnSolarSystemBody()
     if (m_solarSystemItems.contains(selectedBody))
     {
         SolarSystemItem *item = m_solarSystemItems.value(selectedBody);
-        //qDebug() << "scene rect" << m_solarSystemScene->sceneRect() <<  "view scene rect" << ui->image->sceneRect() << "visible rect" << getVisibleRect(ui->image) << "centre on" << selectedBody << item->m_pixmapItem->pos();
         ui->image->centerOn(item->m_pixmapItem);
         ui->image->setDragMode(QGraphicsView::NoDrag);
     }

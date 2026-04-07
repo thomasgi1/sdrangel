@@ -266,7 +266,7 @@ To start a new animation, press ![clear animation](../../../doc/img/StarTracker_
 
 <h3>Solar System Map</h3>
 
-The Solar System Map shows the positions of the bodies selected in the Settings Dialog (5). Positions can be plotted on either a linear or logarithmic scale. The positions are displayed top down on the equatorial plane. 
+The Solar System Map shows the positions of the bodies selected in the Settings Dialog (5). Positions can be plotted on either a linear or logarithmic scale. The positions are displayed top down on the ecliptic plane. 
 The map will be centered at the body selected in the combo box. Select '-' to be able to pan the map with the mouse.
 
 ![Solar System Map](../../../doc/img/StarTracker_solarsystem.png)
@@ -335,38 +335,30 @@ Then select the SDRangel telescope reticle and press Ocular view.
 
 <h2>Attribution</h2>
 
-Solar radio flux measurement at 10.7cm/2800MHz is from National Research Council Canada and Natural Resources Canada: https://www.spaceweather.gc.ca/forecast-prevision/solar-solaire/solarflux/sx-4-en.php
-
-Solar radio flux measurements at 245, 410, 610, 1415, 2695, 4995, 8800 and 15400MHz from the Learmonth Observatory: http://www.sws.bom.gov.au/World_Data_Centre/1/10
-
-150MHz (Landecker and Wielebinski) and 1420MHz (Stockert and Villa-Elisa) All Sky images from MPIfR's (Max-Planck-Institut Fur Radioastronomie) Survey Sampler: https://www3.mpifr-bonn.mpg.de/survey.html
-
-408MHz (Haslam) destriped (Platania) All Sky image and spectral index (Platania) from Strasbourg astronomical Data Center: http://cdsarc.u-strasbg.fr/viz-bin/cat/J/A+A/410/847
-
-Milky Way image from NASA/JPL-Caltech: https://photojournal.jpl.nasa.gov/catalog/PIA10748
-
-Icons are by Adnen Kadri, iconsphere and Erik Madsen, from the Noun Project Noun Project: https://thenounproject.com/
-
-Icons are by Freepik from Flaticon https://www.flaticon.com/
-
-Io & Ganymede Phase vs CML plots from Jupiter radio emission induced by Ganymede and consequences for the radio detection of exoplanets, Zarka et all, 2018: https://www.aanda.org/articles/aa/full_html/2018/10/aa33586-18/aa33586-18.html
-
-Sun image from Solar Dynamics Observatory, NASA
-Mercury image from Messenger, NASA/Johns Hopkins University Applied Physics Laboratory/Carnegie Institution of Washington.
-Venus image by NASA/JPL-Caltech
-Blue Marble by crew of Apollo 17.
-Moon image by NASA.
-Mars image Viking Orbiter, NASA/JPL-Caltech
-Phobos image by NASA/JPL-Caltech/University of Arizona
-Deimos image by NASA/JPL-Caltech/University of Arizona
-Jupiter enhanced image by Kevin M. Gill (CC-BY) based on images provided courtesy of NASA/JPL-Caltech/SwRI/MSSS
-Io from Galileo by NASA/JPL/USGS
-Ganymede from Juno by NASA/JPL-Caltech/SwRI/MSSS/Kevin M. Gill
-Calisto NASA/JPL/DLR
-Saturn from Cassini, NASA/ESA 
-Uranus from Voyager 2, NASA/JPL-Caltech
-Neptune from Voyager 2, NASA/JPL-Caltech
-Pluto image from New Horizons, NASA/JHUAPL/SwRI
+* Solar radio flux measurement at 10.7cm/2800MHz is from National Research Council Canada and Natural Resources Canada: https://www.spaceweather.gc.ca/forecast-prevision/solar-solaire/solarflux/sx-4-en.php
+* Solar radio flux measurements at 245, 410, 610, 1415, 2695, 4995, 8800 and 15400MHz from the Learmonth Observatory: http://www.sws.bom.gov.au/World_Data_Centre/1/10
+* 150MHz (Landecker and Wielebinski) and 1420MHz (Stockert and Villa-Elisa) All Sky images from MPIfR's (Max-Planck-Institut Fur Radioastronomie) Survey Sampler: https://www3.mpifr-bonn.mpg.de/survey.html
+* 408MHz (Haslam) destriped (Platania) All Sky image and spectral index (Platania) from Strasbourg astronomical Data Center: http://cdsarc.u-strasbg.fr/viz-bin/cat/J/A+A/410/847
+* Milky Way image from NASA/JPL-Caltech: https://photojournal.jpl.nasa.gov/catalog/PIA10748
+* Icons are by Adnen Kadri, iconsphere and Erik Madsen, from the Noun Project Noun Project: https://thenounproject.com/
+* Icons are by Freepik from Flaticon https://www.flaticon.com/
+* Io & Ganymede Phase vs CML plots from Jupiter radio emission induced by Ganymede and consequences for the radio detection of exoplanets, Zarka et all, 2018: https://www.aanda.org/articles/aa/full_html/2018/10/aa33586-18/aa33586-18.html
+* Sun image from Solar Dynamics Observatory, NASA
+* Mercury image from Messenger, NASA/Johns Hopkins University Applied Physics Laboratory/Carnegie Institution of Washington.
+* Venus image by NASA/JPL-Caltech
+* Blue Marble by crew of Apollo 17.
+* Moon image by NASA.
+* Mars image Viking Orbiter, NASA/JPL-Caltech
+* Phobos image by NASA/JPL-Caltech/University of Arizona
+* Deimos image by NASA/JPL-Caltech/University of Arizona
+* Jupiter enhanced image by Kevin M. Gill (CC-BY) based on images provided courtesy of NASA/JPL-Caltech/SwRI/MSSS
+* Io from Galileo by NASA/JPL/USGS
+* Ganymede from Juno by NASA/JPL-Caltech/SwRI/MSSS/Kevin M. Gill
+* Calisto NASA/JPL/DLR
+* Saturn from Cassini, NASA/ESA 
+* Uranus from Voyager 2, NASA/JPL-Caltech
+* Neptune from Voyager 2, NASA/JPL-Caltech
+* Pluto image from New Horizons, NASA/JHUAPL/SwRI
 
 <h2>API</h2>
 

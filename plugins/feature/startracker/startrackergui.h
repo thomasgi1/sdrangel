@@ -144,6 +144,7 @@ private:
         QGraphicsPixmapItem *m_pixmapItem;
         QGraphicsTextItem *m_textItem;
         float m_scale;
+        QGraphicsPolygonItem *m_orbitItem;
     };
     QFont m_solarSystemLabelFont;
     QFontMetrics m_solarSystemLabelFontMetrics;
@@ -202,7 +203,8 @@ private:
     void plotJupiter();
     void updateJupiterMoonPosition(double cml, double ioPhase, double ganymedePhase);
     void updateJupiterMoonPositions(const StarTrackerReport::MsgReportJupiterData& report);
-    void updateSolarSystemPositions(const QStringList &names, const QList<QVector3D> &positions);
+    void updateSolarSystemPositions(const QStringList &names, const QList<QVector3D> &positions,
+        const QList<QList<QPointF>> &orbit);
     void scaleSolarSystemItems();
     void createSolarSystemScene();
     QPixmap *getPlanetPixmap(const QString& name);
