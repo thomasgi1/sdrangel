@@ -862,15 +862,17 @@ if(ENABLE_FEATURE_STARTRACKER)
     if (WIN32)
         set(CSPICE_LIBRARIES "${SDRANGEL_BINARY_LIB_DIR}/cspice.lib" CACHE INTERNAL "")
     elseif (LINUX)
-        set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/lib${LIB_SUFFIX}/libcspice.a" CACHE INTERNAL "")
+        # We need a shared library on Linux, as the static library has non PIC code, and we need to link it into a shared library
+        set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/lib${LIB_SUFFIX}/libcspice.so" CACHE INTERNAL "")
+        set(CSPICE_ARGS "-DCSPICE_BUILD_STATIC_LIBRARY=OFF")
     elseif (APPLE)
-        set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/cspice/src/cspice-build/libcspice/libcspice.a" CACHE INTERNAL "")
+        set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/cspice/src/cspice-build/lib/libcspice.a" CACHE INTERNAL "")
     endif()
     ExternalProject_Add(cspice
             GIT_REPOSITORY https://github.com/srcejon/cspice-cmake
             GIT_TAG "msvc"
             PREFIX "${EXTERNAL_BUILD_LIBRARIES}/cspice"
-            CMAKE_ARGS ${COMMON_CMAKE_ARGS}
+            CMAKE_ARGS ${COMMON_CMAKE_ARGS} ${CSPICE_ARGS}
             BUILD_BYPRODUCTS "${CSPICE_LIBRARIES}"
             INSTALL_COMMAND ""
             TEST_COMMAND ""
@@ -880,13 +882,6 @@ if(ENABLE_FEATURE_STARTRACKER)
     set_global_cache(CSPICE_FOUND ON)
     set(CSPICE_EXTERNAL ON CACHE INTERNAL "")
     set(CSPICE_INCLUDE_DIR "${EXTERNAL_BUILD_LIBRARIES}/cspice/src/cspice/include" CACHE INTERNAL "")
-    if (WIN32)
-        install(FILES "${SDRANGEL_BINARY_BIN_DIR}/cspice${CMAKE_SHARED_LIBRARY_SUFFIX}" DESTINATION "${INSTALL_LIB_DIR}")
-    elseif (APPLE)
-        install(DIRECTORY "${binary_dir}/libcspice" DESTINATION "${INSTALL_LIB_DIR}"
-                FILES_MATCHING PATTERN "libcspice*${CMAKE_SHARED_LIBRARY_SUFFIX}")
-        set(MACOS_EXTERNAL_LIBS_FIXUP "${MACOS_EXTERNAL_LIBS_FIXUP};${binary_dir}/libcspice")
-    endif ()
 endif ()
 
 if(ENABLE_CHANNELRX_REMOTETCPSINK)
