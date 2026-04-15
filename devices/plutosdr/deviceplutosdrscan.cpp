@@ -53,6 +53,7 @@ void DevicePlutoSDRScan::scan()
 
     m_scans.clear();
     m_scans.reserve(num_contexts);
+    qDebug("PlutoSDRScan::scan: found %d contexts", num_contexts);
 
     for (i = 0; i < num_contexts; i++)
     {
@@ -64,9 +65,9 @@ void DevicePlutoSDRScan::scan()
         }
 
         qDebug("PlutoSDRScan::scan: %d: %s [%s]", i, description, uri);
-        char *pch = strstr(const_cast<char*>(description), "PlutoSDR");
+        const bool isPlutoDescription = strstr(description, "PlutoSDR") || strstr(description, "AD93");
 
-        if (pch)
+        if (isPlutoDescription)
         {
             // As device scan is used across multiple vectors it's best to use a
             // managed pointer, as to keep track of when it's safe to delete.
