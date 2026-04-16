@@ -22,6 +22,7 @@
 #include <cstring>
 #include <regex>
 #include <memory>
+#include <string_view>
 #include <iio.h>
 
 #include <QtGlobal>
@@ -65,7 +66,10 @@ void DevicePlutoSDRScan::scan()
         }
 
         qDebug("PlutoSDRScan::scan: %d: %s [%s]", i, description, uri);
-        const bool isPlutoDescription = strstr(description, "PlutoSDR") || strstr(description, "AD93");
+        const std::string_view descriptionView = description ? std::string_view{description} : std::string_view{};
+        const bool isPlutoDescription =
+            (descriptionView.find("PlutoSDR") != std::string_view::npos) ||
+            (descriptionView.find("AD93") != std::string_view::npos);
 
         if (isPlutoDescription)
         {
