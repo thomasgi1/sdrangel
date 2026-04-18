@@ -74,12 +74,6 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
-    // Enable compositor-level transparency so that the window background can be made
-    // fully transparent at runtime.  WA_TranslucentBackground must be set before the
-    // native window handle is created (i.e., before first show).  The base constructor
-    // FeatureGUI(parent) has already run at this point but the widget has not yet been
-    // shown, so this is the safe and correct place to set it.
-    setAttribute(Qt::WA_TranslucentBackground, true);
     // Capture the stylesheet that FeatureGUI set in its constructor so that
     // applyTransparency() can restore it when transparency is disabled.
     m_normalStyleSheet = styleSheet();
@@ -384,6 +378,13 @@ void FreqDisplayGUI::applyTransparency()
 
     if (m_settings.m_transparentBackground)
     {
+        // WA_TranslucentBackground must be set before the native window handle is
+        // created or recreated.  Setting it here (before the deferred lambda's
+        // setWindowFlags call, which forces native-window recreation) is the
+        // correct place.  For the startup case where the widget has not yet been
+        // shown, setting it here is also safe.
+        setAttribute(Qt::WA_TranslucentBackground, true);
+
         // Detach from the MDI area so that WA_TranslucentBackground operates at the
         // OS compositor level.  Inside a QMdiArea the attribute only affects Qt's
         // internal backing store, which only passes through for QOpenGLWidget children
@@ -426,6 +427,10 @@ void FreqDisplayGUI::applyTransparency()
             const QPoint mdiPos = savedMdi->viewport()->mapFromGlobal(currentGlobalPos);
             // Defer re-embedding to the next event loop iteration.
             QTimer::singleShot(0, this, [this, savedMdi, mdiPos, savedMdiGeometry]() {
+                // Clear the translucency attribute before reparenting so the native
+                // window is recreated as an opaque window.  This restores the normal
+                // title bar and border when the window is not in transparent mode.
+                setAttribute(Qt::WA_TranslucentBackground, false);
                 showNormal();
                 savedMdi->addSubWindow(this);
                 show();
