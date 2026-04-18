@@ -1,6 +1,8 @@
 #include <QFont>
 #include <QLocale>
+#include <QMdiArea>
 #include <QResizeEvent>
+#include <QTimer>
 
 #include "channel/channelwebapiutils.h"
 #include "gui/buttonswitch.h"
@@ -63,7 +65,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     ui(new Ui::FreqDisplayGUI),
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
     m_availableChannelOrFeatureHandler(QStringList(), rxTxChannelKinds),
-    m_doApplySettings(true)
+    m_doApplySettings(true),
+    m_savedMdi(nullptr)
 {
     (void) pluginAPI;
     (void) featureUISet;
@@ -370,24 +373,62 @@ void FreqDisplayGUI::applyTransparency()
 
     if (m_settings.m_transparentBackground)
     {
-        // Clear the entire RollupContents area to alpha=0 so the compositor
-        // (WA_TranslucentBackground on the window) shows through in the display area.
+        // Detach from the MDI area so that WA_TranslucentBackground operates at the
+        // OS compositor level.  Inside a QMdiArea the attribute only affects Qt's
+        // internal backing store, which only passes through for QOpenGLWidget children
+        // (GPU compositing path) but not for ordinary software-rendered siblings or
+        // external application windows.
+        if (!m_savedMdi && mdiArea())
+        {
+            m_savedMdi = mdiArea();
+            // Save position in MDI viewport coordinates and convert to screen
+            // coordinates before the window is reparented.
+            m_mdiGeometry = geometry();
+            const QPoint globalPos = m_savedMdi->viewport()->mapToGlobal(m_mdiGeometry.topLeft());
+            // Defer the reparenting to the next event loop iteration so that any
+            // in-progress paint or layout event completes first.
+            QTimer::singleShot(0, this, [this, globalPos]() {
+                if (!m_savedMdi) { return; }
+                m_savedMdi->removeSubWindow(this);
+                // Make this a proper top-level frameless overlay window so the OS
+                // compositor can blend the transparent pixels against everything beneath.
+                setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                move(globalPos);
+                resize(m_mdiGeometry.size());
+                show();
+            });
+        }
+
         rollupContents->setTransparentBackground(true);
-        // Have the settings bar paint its own opaque background over the cleared area
-        // so that the controls remain fully visible.
         ui->settingsContainer->setAutoFillBackground(true);
     }
     else
     {
-        rollupContents->setTransparentBackground(false);
-        // Restore the settings bar to its default (background painted by RollupContents).
-        ui->settingsContainer->setAutoFillBackground(false);
-    }
+        if (m_savedMdi)
+        {
+            QMdiArea* savedMdi = m_savedMdi;
+            const QRect savedMdiGeometry = m_mdiGeometry;
+            m_savedMdi = nullptr;
+            // Convert current screen position back to MDI viewport coordinates so
+            // the window reappears where the user last placed it.
+            const QPoint currentGlobalPos = mapToGlobal(QPoint(0, 0));
+            const QPoint mdiPos = savedMdi->viewport()->mapFromGlobal(currentGlobalPos);
+            // Defer re-embedding to the next event loop iteration.
+            QTimer::singleShot(0, this, [this, savedMdi, mdiPos, savedMdiGeometry]() {
+                showNormal();
+                savedMdi->addSubWindow(this);
+                show();
+                move(mdiPos);
+                resize(savedMdiGeometry.size());
+            });
+        }
 
-    // Clear any stylesheet overrides left over from earlier implementations.
-    ui->settingsContainer->setStyleSheet(QString());
-    ui->horizontalWidget->setStyleSheet(QString());
-    ui->frequencyValue->setStyleSheet(QString());
+        rollupContents->setTransparentBackground(false);
+        ui->settingsContainer->setAutoFillBackground(false);
+        ui->settingsContainer->setStyleSheet(QString());
+        ui->horizontalWidget->setStyleSheet(QString());
+        ui->frequencyValue->setStyleSheet(QString());
+    }
 }
 
 void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)

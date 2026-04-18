@@ -18,6 +18,7 @@ class PluginAPI;
 class FeatureUISet;
 class FreqDisplay;
 class Feature;
+class QMdiArea;
 
 namespace Ui {
 class FreqDisplayGUI;
@@ -54,6 +55,8 @@ private:
     bool m_doApplySettings;
     QString m_normalStyleSheet; ///< Stylesheet set by FeatureGUI, saved so it can be restored when transparency is disabled
     QString m_previousDisplayText; ///< Last text set on frequencyValue, used to detect changes for speech
+    QMdiArea* m_savedMdi;   ///< MDI area saved when window is detached for transparent-background mode
+    QRect m_mdiGeometry;    ///< Window geometry (in MDI viewport coordinates) saved before detaching
 
 #ifdef QT_TEXTTOSPEECH_FOUND
     QTextToSpeech *m_speech = nullptr;
