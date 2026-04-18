@@ -4,6 +4,10 @@
 #include <QTimer>
 #include <QFontComboBox>
 
+#ifdef QT_TEXTTOSPEECH_FOUND
+#include <QTextToSpeech>
+#endif
+
 #include "availablechannelorfeaturehandler.h"
 #include "feature/featuregui.h"
 #include "util/messagequeue.h"
@@ -49,6 +53,11 @@ private:
     QTimer m_pollTimer;
     bool m_doApplySettings;
     QString m_normalStyleSheet; ///< Stylesheet set by FeatureGUI, saved so it can be restored when transparency is disabled
+    QString m_previousDisplayText; ///< Last text set on frequencyValue, used to detect changes for speech
+
+#ifdef QT_TEXTTOSPEECH_FOUND
+    QTextToSpeech *m_speech = nullptr;
+#endif
 
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     ~FreqDisplayGUI() override;
@@ -64,6 +73,7 @@ private slots:
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
     void on_channels_currentIndexChanged(int index);
     void on_displayMode_currentIndexChanged(int index);
+    void on_speech_toggled(bool checked);
     void on_fontFamily_currentFontChanged(const QFont& font);
     void on_transparentBackground_toggled(bool checked);
     void pollSelectedChannel();

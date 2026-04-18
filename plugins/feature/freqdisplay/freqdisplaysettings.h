@@ -20,6 +20,7 @@ struct FreqDisplaySettings
     QString m_fontName;
     bool m_transparentBackground;
     DisplayMode m_displayMode;
+    bool m_speechEnabled;
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;

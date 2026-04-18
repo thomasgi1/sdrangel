@@ -131,6 +131,16 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="ButtonSwitch" name="speech">
+        <property name="toolTip">
+         <string>Speak frequency/power value when it changes</string>
+        </property>
+        <property name="text">
+         <string>S</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>

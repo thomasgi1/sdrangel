@@ -71,6 +71,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     (void) pluginAPI;
     (void) featureUISet;
 
+
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
     // Enable compositor-level transparency so that the window background can be made
@@ -100,6 +101,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     connect(ui->channels, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_channels_currentIndexChanged);
     connect(ui->displayMode, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_displayMode_currentIndexChanged);
+    connect(ui->speech, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_speech_toggled);
     connect(ui->fontFamily, &QFontComboBox::currentFontChanged, this, &FreqDisplayGUI::on_fontFamily_currentFontChanged);
     connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
@@ -136,6 +138,10 @@ void FreqDisplayGUI::displaySettings()
     ui->displayMode->setCurrentIndex(static_cast<int>(m_settings.m_displayMode));
     ui->displayMode->blockSignals(false);
 
+    ui->speech->blockSignals(true);
+    ui->speech->setChecked(m_settings.m_speechEnabled);
+    ui->speech->blockSignals(false);
+
     ui->transparentBackground->blockSignals(true);
     ui->transparentBackground->setChecked(m_settings.m_transparentBackground);
     ui->transparentBackground->blockSignals(false);
@@ -158,6 +164,7 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("fontName");
     settingsKeys.append("transparentBackground");
     settingsKeys.append("displayMode");
+    settingsKeys.append("speechEnabled");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -233,9 +240,19 @@ void FreqDisplayGUI::pollSelectedChannel()
 
 void FreqDisplayGUI::updateFrequencyText()
 {
+    auto setLabelText = [this](const QString& text) {
+        ui->frequencyValue->setText(text);
+#ifdef QT_TEXTTOSPEECH_FOUND
+        if (m_settings.m_speechEnabled && m_speech && (text != m_previousDisplayText)) {
+            m_speech->say(text);
+        }
+#endif
+        m_previousDisplayText = text;
+    };
+
     if (m_settings.m_selectedChannel.isEmpty())
     {
-        ui->frequencyValue->setText(tr("No channel selected"));
+        setLabelText(tr("No channel selected"));
         updateFrequencyFont();
         return;
     }
@@ -244,7 +261,7 @@ void FreqDisplayGUI::updateFrequencyText()
 
     if (channelListIndex < 0)
     {
-        ui->frequencyValue->setText(tr("Selected channel unavailable"));
+        setLabelText(tr("Selected channel unavailable"));
         updateFrequencyFont();
         return;
     }
@@ -261,13 +278,13 @@ void FreqDisplayGUI::updateFrequencyText()
 
         if (!ChannelWebAPIUtils::getCenterFrequency(selectedChannel.m_superIndex, centerFrequencyHz))
         {
-            ui->frequencyValue->setText(tr("Frequency unavailable"));
+            setLabelText(tr("Frequency unavailable"));
             updateFrequencyFont();
             return;
         }
         if (!ChannelWebAPIUtils::getFrequencyOffset(selectedChannel.m_superIndex, selectedChannel.m_index, offsetHz))
         {
-            ui->frequencyValue->setText(tr("Offset unavailable"));
+            setLabelText(tr("Offset unavailable"));
             updateFrequencyFont();
             return;
         }
@@ -283,7 +300,7 @@ void FreqDisplayGUI::updateFrequencyText()
         double power = 0.0;
         if (!ChannelWebAPIUtils::getChannelReportValue(selectedChannel.m_superIndex, selectedChannel.m_index, "channelPowerDB", power))
         {
-            ui->frequencyValue->setText(tr("Power unavailable"));
+            setLabelText(tr("Power unavailable"));
             updateFrequencyFont();
             return;
         }
@@ -292,11 +309,11 @@ void FreqDisplayGUI::updateFrequencyText()
 
     // --- Compose display text ---
     if (mode == FreqDisplaySettings::Frequency) {
-        ui->frequencyValue->setText(freqText);
+        setLabelText(freqText);
     } else if (mode == FreqDisplaySettings::Power) {
-        ui->frequencyValue->setText(powerText);
+        setLabelText(powerText);
     } else {
-        ui->frequencyValue->setText(freqText + "\n" + powerText);
+        setLabelText(freqText + "\n" + powerText);
     }
 
     updateFrequencyFont();
@@ -374,6 +391,17 @@ void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
     m_settings.m_displayMode = static_cast<FreqDisplaySettings::DisplayMode>(index);
     applySettings();
     updateFrequencyText();
+}
+
+void FreqDisplayGUI::on_speech_toggled(bool checked)
+{
+    m_settings.m_speechEnabled = checked;
+#ifdef QT_TEXTTOSPEECH_FOUND
+    if (checked && !m_speech) {
+        m_speech = new QTextToSpeech(this);
+    }
+#endif
+    applySettings();
 }
 
 void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)

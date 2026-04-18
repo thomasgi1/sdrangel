@@ -16,6 +16,7 @@ void FreqDisplaySettings::resetToDefaults()
     m_fontName.clear();
     m_transparentBackground = false;
     m_displayMode = Frequency;
+    m_speechEnabled = false;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -29,6 +30,7 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeString(5, m_fontName);
     s.writeBool(6, m_transparentBackground);
     s.writeS32(7, static_cast<int>(m_displayMode));
+    s.writeBool(8, m_speechEnabled);
 
     return s.final();
 }
@@ -58,6 +60,7 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     int displayMode = 0;
     d.readS32(7, &displayMode, 0);
     m_displayMode = static_cast<DisplayMode>(displayMode);
+    d.readBool(8, &m_speechEnabled, false);
 
     return true;
 }
@@ -84,5 +87,8 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("displayMode")) {
         m_displayMode = settings.m_displayMode;
+    }
+    if (settingsKeys.contains("speechEnabled")) {
+        m_speechEnabled = settings.m_speechEnabled;
     }
 }
