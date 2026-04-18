@@ -10,6 +10,10 @@
 #include "freqdisplay.h"
 #include "freqdisplaygui.h"
 
+namespace {
+constexpr double kFrequencyFontScale = 0.22;
+}
+
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
 {
     return new FreqDisplayGUI(pluginAPI, featureUISet, feature);
@@ -125,17 +129,14 @@ void FreqDisplayGUI::updateChannelList()
 
     int selectedIndex = -1;
 
-    int i = 0;
-    for (const auto& availableChannel : m_availableChannels)
+    for (int i = 0; i < m_availableChannels.size(); ++i)
     {
-        const QString longId = availableChannel.getLongId();
+        const QString longId = m_availableChannels.at(i).getLongId();
         ui->channels->addItem(longId);
 
         if (longId == m_settings.m_selectedChannel) {
             selectedIndex = i;
         }
-
-        ++i;
     }
 
     if ((selectedIndex < 0) && (m_availableChannels.size() > 0)) {
@@ -227,7 +228,7 @@ void FreqDisplayGUI::updateFrequencyText()
 void FreqDisplayGUI::updateFrequencyFont()
 {
     const int minDimension = qMin(ui->frequencyValue->width(), ui->frequencyValue->height());
-    const int pointSize = qMax(10, static_cast<int>(minDimension * 0.22));
+    const int pointSize = qMax(10, static_cast<int>(minDimension * kFrequencyFontScale));
 
     QFont font = ui->frequencyValue->font();
     font.setPointSize(pointSize);
