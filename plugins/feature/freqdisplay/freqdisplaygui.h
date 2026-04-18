@@ -48,6 +48,7 @@ private:
     AvailableChannelOrFeatureList m_availableChannels;
     QTimer m_pollTimer;
     bool m_doApplySettings;
+    QString m_normalStyleSheet; ///< Stylesheet set by FeatureGUI, saved so it can be restored when transparency is disabled
 
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     ~FreqDisplayGUI() override;

@@ -15,6 +15,12 @@ namespace {
 constexpr const char* rxTxChannelKinds = "RT";
 constexpr int pollIntervalMs = 1000;
 constexpr int minimumFrequencyFontPointSize = 10;
+// Reference point size used when probing text metrics in updateFrequencyFont().
+// Large enough that integer rounding in QFontMetrics is negligible.
+constexpr int fontProbePointSize = 200;
+// Stylesheet applied to this window when transparency is enabled.
+// The '*' universal selector cascades to every child widget.
+constexpr const char* transparentStyleSheet = "* { background: transparent; border: none; }";
 }
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
@@ -67,6 +73,15 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
+    // Enable compositor-level transparency so that the window background can be made
+    // fully transparent at runtime.  WA_TranslucentBackground must be set before the
+    // native window handle is created (i.e., before first show).  The base constructor
+    // FeatureGUI(parent) has already run at this point but the widget has not yet been
+    // shown, so this is the safe and correct place to set it.
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    // Capture the stylesheet that FeatureGUI set in its constructor so that
+    // applyTransparency() can restore it when transparency is disabled.
+    m_normalStyleSheet = styleSheet();
 
     RollupContents *rollupContents = getRollupContents();
     ui->setupUi(rollupContents);
@@ -272,8 +287,7 @@ void FreqDisplayGUI::updateFrequencyFont()
 
     // Probe at a large reference size to get accurate text dimensions, then
     // scale linearly to find the largest point size that fits in both directions.
-    constexpr int probeSize = 200;
-    font.setPointSize(probeSize);
+    font.setPointSize(fontProbePointSize);
     const QFontMetrics fm(font);
     const int textWidth = fm.horizontalAdvance(text);
     const int textHeight = fm.height();
@@ -282,8 +296,8 @@ void FreqDisplayGUI::updateFrequencyFont()
         return;
     }
 
-    const int maxFromWidth  = probeSize * availableWidth  / textWidth;
-    const int maxFromHeight = probeSize * availableHeight / textHeight;
+    const int maxFromWidth  = fontProbePointSize * availableWidth  / textWidth;
+    const int maxFromHeight = fontProbePointSize * availableHeight / textHeight;
     const int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
     ui->frequencyValue->setFont(font);
@@ -293,13 +307,18 @@ void FreqDisplayGUI::applyTransparency()
 {
     if (m_settings.m_transparentBackground)
     {
-        // Make the content area and frequency label fully transparent so that
-        // only the text is visible over whatever is behind the window.
-        ui->settingsContainer->setStyleSheet("background-color: transparent;");
-        ui->frequencyValue->setStyleSheet("background-color: transparent;");
+        // Override the FeatureGUI stylesheet on the entire window using the '*'
+        // universal selector so that every child widget's background is also
+        // cleared.  Combined with WA_TranslucentBackground (set in the constructor)
+        // this makes the sub-window show whatever is rendered behind it in the
+        // MDI area instead of the normal solid background.
+        setStyleSheet(transparentStyleSheet);
     }
     else
     {
+        // Restore the stylesheet that FeatureGUI set at construction time.
+        setStyleSheet(m_normalStyleSheet);
+        // Also clear any per-widget overrides from previous transparent runs.
         ui->settingsContainer->setStyleSheet(QString());
         ui->frequencyValue->setStyleSheet(QString());
     }
