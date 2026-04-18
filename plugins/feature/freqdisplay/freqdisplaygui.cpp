@@ -11,8 +11,8 @@
 #include "freqdisplaygui.h"
 
 namespace {
-constexpr double kFrequencyFontScale = 0.22;
-constexpr const char* kRxTxKinds = "RT";
+constexpr double frequencyFontScale = 0.22;
+constexpr const char* rxTxKinds = "RT";
 }
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
@@ -57,7 +57,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     FeatureGUI(parent),
     ui(new Ui::FreqDisplayGUI),
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
-    m_availableChannelOrFeatureHandler(QStringList(), kRxTxKinds),
+    m_availableChannelOrFeatureHandler(QStringList(), rxTxKinds),
     m_doApplySettings(true)
 {
     (void) pluginAPI;
@@ -231,7 +231,7 @@ void FreqDisplayGUI::updateFrequencyText()
 void FreqDisplayGUI::updateFrequencyFont()
 {
     const int minDimension = qMin(ui->frequencyValue->width(), ui->frequencyValue->height());
-    const int pointSize = qMax(10, static_cast<int>(minDimension * kFrequencyFontScale));
+    const int pointSize = qMax(10, static_cast<int>(minDimension * frequencyFontScale));
 
     QFont font = ui->frequencyValue->font();
     font.setPointSize(pointSize);
