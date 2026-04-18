@@ -12,6 +12,7 @@
 
 namespace {
 constexpr double kFrequencyFontScale = 0.22;
+constexpr const char* kRxTxKinds = "RT";
 }
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
@@ -56,7 +57,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     FeatureGUI(parent),
     ui(new Ui::FreqDisplayGUI),
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
-    m_availableChannelOrFeatureHandler(QStringList(), "RT"),
+    m_availableChannelOrFeatureHandler(QStringList(), kRxTxKinds),
     m_doApplySettings(true)
 {
     (void) pluginAPI;
@@ -220,7 +221,9 @@ void FreqDisplayGUI::updateFrequencyText()
         return;
     }
 
-    const qint64 absoluteFrequency = qRound64(centerFrequencyHz) + static_cast<qint64>(offsetHz);
+    const qint64 centerFrequencyRounded = qRound64(centerFrequencyHz);
+    const qint64 channelOffset = static_cast<qint64>(offsetHz);
+    const qint64 absoluteFrequency = centerFrequencyRounded + channelOffset;
     ui->frequencyValue->setText(tr("%1 Hz").arg(QLocale().toString(absoluteFrequency)));
     updateFrequencyFont();
 }
