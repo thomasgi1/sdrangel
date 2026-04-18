@@ -11,6 +11,7 @@
 #include "freqdisplaygui.h"
 
 namespace {
+// Scales the frequency text so it remains large while fitting inside the label.
 constexpr double frequencyFontScale = 0.22;
 constexpr const char* rxTxKinds = "RT";
 }
