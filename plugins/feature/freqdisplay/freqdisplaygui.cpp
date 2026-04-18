@@ -243,8 +243,19 @@ void FreqDisplayGUI::updateFrequencyText()
     auto setLabelText = [this](const QString& text) {
         ui->frequencyValue->setText(text);
 #ifdef QT_TEXTTOSPEECH_FOUND
-        if (m_settings.m_speechEnabled && m_speech && (text != m_previousDisplayText)) {
-            m_speech->say(text);
+        if (m_settings.m_speechEnabled && m_speech && (text != m_previousDisplayText))
+        {
+            if (m_speech->state() == QTextToSpeech::Speaking)
+            {
+                // Engine is busy — save the latest text so the stateChanged
+                // slot can say it once the current utterance finishes.
+                m_pendingSpeechText = text;
+            }
+            else
+            {
+                m_pendingSpeechText.clear();
+                m_speech->say(text);
+            }
         }
 #endif
         m_previousDisplayText = text;
@@ -442,8 +453,10 @@ void FreqDisplayGUI::on_speech_toggled(bool checked)
 {
     m_settings.m_speechEnabled = checked;
 #ifdef QT_TEXTTOSPEECH_FOUND
-    if (checked && !m_speech) {
+    if (checked && !m_speech)
+    {
         m_speech = new QTextToSpeech(this);
+        connect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
     }
 #endif
     applySettings();
@@ -468,3 +481,15 @@ void FreqDisplayGUI::resizeEvent(QResizeEvent *event)
     FeatureGUI::resizeEvent(event);
     updateFrequencyFont();
 }
+
+#ifdef QT_TEXTTOSPEECH_FOUND
+void FreqDisplayGUI::speechStateChanged(QTextToSpeech::State state)
+{
+    if (state == QTextToSpeech::Ready && !m_pendingSpeechText.isEmpty())
+    {
+        const QString text = m_pendingSpeechText;
+        m_pendingSpeechText.clear();
+        m_speech->say(text);
+    }
+}
+#endif

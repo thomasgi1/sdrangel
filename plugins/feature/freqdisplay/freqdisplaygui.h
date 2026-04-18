@@ -60,6 +60,7 @@ private:
 
 #ifdef QT_TEXTTOSPEECH_FOUND
     QTextToSpeech *m_speech = nullptr;
+    QString m_pendingSpeechText; ///< Most recent text to speak once the engine is no longer busy
 #endif
 
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
@@ -80,6 +81,9 @@ private slots:
     void on_fontFamily_currentFontChanged(const QFont& font);
     void on_transparentBackground_toggled(bool checked);
     void pollSelectedChannel();
+#ifdef QT_TEXTTOSPEECH_FOUND
+    void speechStateChanged(QTextToSpeech::State state);
+#endif
 };
 
 #endif // INCLUDE_FEATURE_FREQDISPLAYGUI_H_
