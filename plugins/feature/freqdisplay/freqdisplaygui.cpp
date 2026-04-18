@@ -14,7 +14,7 @@ namespace {
 // For typical feature windows this keeps the text close to ~22% of the smallest
 // widget dimension, which yields large readable digits without clipping.
 constexpr double frequencyFontScale = 0.22;
-constexpr const char* rxTxKinds = "RT";
+constexpr const char* rxTxChannelKinds = "RT";
 constexpr int pollIntervalMs = 1000;
 constexpr int minimumFrequencyFontPointSize = 10;
 }
@@ -61,7 +61,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     FeatureGUI(parent),
     ui(new Ui::FreqDisplayGUI),
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
-    m_availableChannelOrFeatureHandler(QStringList(), rxTxKinds),
+    m_availableChannelOrFeatureHandler(QStringList(), rxTxChannelKinds),
     m_doApplySettings(true)
 {
     (void) pluginAPI;
@@ -230,9 +230,9 @@ void FreqDisplayGUI::updateFrequencyText()
         return;
     }
 
-    const qint64 centerFrequencyRounded = qRound64(centerFrequencyHz);
+    const qint64 centerFrequency = qRound64(centerFrequencyHz);
     const qint64 channelOffset = static_cast<qint64>(offsetHz);
-    const qint64 absoluteFrequency = centerFrequencyRounded + channelOffset;
+    const qint64 absoluteFrequency = centerFrequency + channelOffset;
     ui->frequencyValue->setText(tr("%1 Hz").arg(QLocale().toString(absoluteFrequency)));
     updateFrequencyFont();
 }
