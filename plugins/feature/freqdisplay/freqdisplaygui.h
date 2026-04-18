@@ -63,6 +63,7 @@ private:
 private slots:
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
     void on_channels_currentIndexChanged(int index);
+    void on_displayMode_currentIndexChanged(int index);
     void on_fontFamily_currentFontChanged(const QFont& font);
     void on_transparentBackground_toggled(bool checked);
     void pollSelectedChannel();

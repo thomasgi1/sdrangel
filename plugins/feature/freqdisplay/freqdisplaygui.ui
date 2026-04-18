@@ -69,6 +69,45 @@
      </layout>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="displayLayout">
+      <item>
+       <widget class="QLabel" name="displayLabel">
+        <property name="text">
+         <string>Display</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="displayMode">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Select what to display: channel frequency, power or both</string>
+        </property>
+        <item>
+         <property name="text">
+          <string>Frequency</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Power</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Both</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
      <layout class="QHBoxLayout" name="fontLayout">
       <item>
        <widget class="QLabel" name="fontLabel">

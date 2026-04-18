@@ -7,12 +7,19 @@
 
 struct FreqDisplaySettings
 {
+    enum DisplayMode {
+        Frequency = 0, //!< Show channel centre frequency
+        Power     = 1, //!< Show channel power in dBFS
+        Both      = 2  //!< Show frequency and power on two lines
+    };
+
     QString m_title;
     QString m_selectedChannel;
     int m_workspaceIndex;
     QByteArray m_geometryBytes;
     QString m_fontName;
     bool m_transparentBackground;
+    DisplayMode m_displayMode;
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;

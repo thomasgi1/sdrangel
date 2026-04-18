@@ -15,6 +15,7 @@ void FreqDisplaySettings::resetToDefaults()
     m_geometryBytes.clear();
     m_fontName.clear();
     m_transparentBackground = false;
+    m_displayMode = Frequency;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -27,6 +28,7 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeBlob(4, m_geometryBytes);
     s.writeString(5, m_fontName);
     s.writeBool(6, m_transparentBackground);
+    s.writeS32(7, static_cast<int>(m_displayMode));
 
     return s.final();
 }
@@ -53,6 +55,9 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     d.readBlob(4, &m_geometryBytes);
     d.readString(5, &m_fontName, "");
     d.readBool(6, &m_transparentBackground, false);
+    int displayMode = 0;
+    d.readS32(7, &displayMode, 0);
+    m_displayMode = static_cast<DisplayMode>(displayMode);
 
     return true;
 }
@@ -76,5 +81,8 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("transparentBackground")) {
         m_transparentBackground = settings.m_transparentBackground;
+    }
+    if (settingsKeys.contains("displayMode")) {
+        m_displayMode = settings.m_displayMode;
     }
 }

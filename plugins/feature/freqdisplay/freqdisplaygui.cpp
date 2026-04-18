@@ -85,6 +85,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     RollupContents *rollupContents = getRollupContents();
     ui->setupUi(rollupContents);
+    ui->frequencyValue->setWordWrap(true);
 
     m_freqDisplay->setMessageQueueToGUI(&m_inputMessageQueue);
     m_settings = m_freqDisplay->getSettings();
@@ -98,6 +99,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     m_availableChannelOrFeatureHandler.scanAvailableChannelsAndFeatures();
 
     connect(ui->channels, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_channels_currentIndexChanged);
+    connect(ui->displayMode, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_displayMode_currentIndexChanged);
     connect(ui->fontFamily, &QFontComboBox::currentFontChanged, this, &FreqDisplayGUI::on_fontFamily_currentFontChanged);
     connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
@@ -130,6 +132,10 @@ void FreqDisplayGUI::displaySettings()
     }
     ui->fontFamily->blockSignals(false);
 
+    ui->displayMode->blockSignals(true);
+    ui->displayMode->setCurrentIndex(static_cast<int>(m_settings.m_displayMode));
+    ui->displayMode->blockSignals(false);
+
     ui->transparentBackground->blockSignals(true);
     ui->transparentBackground->setChecked(m_settings.m_transparentBackground);
     ui->transparentBackground->blockSignals(false);
@@ -151,6 +157,7 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("geometryBytes");
     settingsKeys.append("fontName");
     settingsKeys.append("transparentBackground");
+    settingsKeys.append("displayMode");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -243,26 +250,55 @@ void FreqDisplayGUI::updateFrequencyText()
     }
 
     const auto& selectedChannel = m_availableChannels.at(channelListIndex);
-    double centerFrequencyHz = 0.0;
-    int offsetHz = 0;
+    const FreqDisplaySettings::DisplayMode mode = m_settings.m_displayMode;
 
-    if (!ChannelWebAPIUtils::getCenterFrequency(selectedChannel.m_superIndex, centerFrequencyHz))
+    // --- Frequency ---
+    QString freqText;
+    if (mode == FreqDisplaySettings::Frequency || mode == FreqDisplaySettings::Both)
     {
-        ui->frequencyValue->setText(tr("Frequency unavailable"));
-        updateFrequencyFont();
-        return;
-    }
-    if (!ChannelWebAPIUtils::getFrequencyOffset(selectedChannel.m_superIndex, selectedChannel.m_index, offsetHz))
-    {
-        ui->frequencyValue->setText(tr("Offset unavailable"));
-        updateFrequencyFont();
-        return;
+        double centerFrequencyHz = 0.0;
+        int offsetHz = 0;
+
+        if (!ChannelWebAPIUtils::getCenterFrequency(selectedChannel.m_superIndex, centerFrequencyHz))
+        {
+            ui->frequencyValue->setText(tr("Frequency unavailable"));
+            updateFrequencyFont();
+            return;
+        }
+        if (!ChannelWebAPIUtils::getFrequencyOffset(selectedChannel.m_superIndex, selectedChannel.m_index, offsetHz))
+        {
+            ui->frequencyValue->setText(tr("Offset unavailable"));
+            updateFrequencyFont();
+            return;
+        }
+
+        const qint64 absoluteFrequency = qRound64(centerFrequencyHz) + static_cast<qint64>(offsetHz);
+        freqText = tr("%1 Hz").arg(QLocale().toString(absoluteFrequency));
     }
 
-    const qint64 centerFrequency = qRound64(centerFrequencyHz);
-    const qint64 channelOffset = static_cast<qint64>(offsetHz);
-    const qint64 absoluteFrequency = centerFrequency + channelOffset;
-    ui->frequencyValue->setText(tr("%1 Hz").arg(QLocale().toString(absoluteFrequency)));
+    // --- Power ---
+    QString powerText;
+    if (mode == FreqDisplaySettings::Power || mode == FreqDisplaySettings::Both)
+    {
+        double power = 0.0;
+        if (!ChannelWebAPIUtils::getChannelReportValue(selectedChannel.m_superIndex, selectedChannel.m_index, "channelPowerDB", power))
+        {
+            ui->frequencyValue->setText(tr("Power unavailable"));
+            updateFrequencyFont();
+            return;
+        }
+        powerText = QString("%1 dBFS").arg(power, 0, 'f', 1);
+    }
+
+    // --- Compose display text ---
+    if (mode == FreqDisplaySettings::Frequency) {
+        ui->frequencyValue->setText(freqText);
+    } else if (mode == FreqDisplaySettings::Power) {
+        ui->frequencyValue->setText(powerText);
+    } else {
+        ui->frequencyValue->setText(freqText + "\n" + powerText);
+    }
+
     updateFrequencyFont();
 }
 
@@ -289,15 +325,24 @@ void FreqDisplayGUI::updateFrequencyFont()
     // scale linearly to find the largest point size that fits in both directions.
     font.setPointSize(fontProbePointSize);
     const QFontMetrics fm(font);
-    const int textWidth = fm.horizontalAdvance(text);
-    const int textHeight = fm.height();
 
-    if (textWidth <= 0 || textHeight <= 0) {
+    // For multi-line text (Both mode) find the widest line; divide available
+    // height equally across lines so each line receives the same font size.
+    const QStringList lines = text.split('\n');
+    const int numLines = lines.size();
+    int maxLineWidth = 0;
+    for (const QString& line : lines) {
+        maxLineWidth = qMax(maxLineWidth, fm.horizontalAdvance(line));
+    }
+    const int lineHeight = fm.height();
+
+    if (maxLineWidth <= 0 || lineHeight <= 0) {
         return;
     }
 
-    const int maxFromWidth  = fontProbePointSize * availableWidth  / textWidth;
-    const int maxFromHeight = fontProbePointSize * availableHeight / textHeight;
+    const int heightPerLine = availableHeight / numLines;
+    const int maxFromWidth  = fontProbePointSize * availableWidth  / maxLineWidth;
+    const int maxFromHeight = fontProbePointSize * heightPerLine   / lineHeight;
     const int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
     ui->frequencyValue->setFont(font);
@@ -322,6 +367,13 @@ void FreqDisplayGUI::applyTransparency()
         ui->settingsContainer->setStyleSheet(QString());
         ui->frequencyValue->setStyleSheet(QString());
     }
+}
+
+void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
+{
+    m_settings.m_displayMode = static_cast<FreqDisplaySettings::DisplayMode>(index);
+    applySettings();
+    updateFrequencyText();
 }
 
 void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)
