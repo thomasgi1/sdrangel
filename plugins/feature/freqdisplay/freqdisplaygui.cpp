@@ -11,9 +11,6 @@
 #include "freqdisplaygui.h"
 
 namespace {
-// For typical feature windows this keeps the text close to ~22% of the smallest
-// widget dimension, which yields large readable digits without clipping.
-constexpr double frequencyFontScale = 0.22;
 constexpr const char* rxTxChannelKinds = "RT";
 constexpr int pollIntervalMs = 1000;
 constexpr int minimumFrequencyFontPointSize = 10;
@@ -239,13 +236,33 @@ void FreqDisplayGUI::updateFrequencyText()
 
 void FreqDisplayGUI::updateFrequencyFont()
 {
-    const int minDimension = qMin(ui->frequencyValue->width(), ui->frequencyValue->height());
-    if (minDimension <= 0) {
+    const int availableWidth = ui->frequencyValue->width();
+    const int availableHeight = ui->frequencyValue->height();
+    if (availableWidth <= 0 || availableHeight <= 0) {
         return;
     }
-    const int pointSize = qMax(minimumFrequencyFontPointSize, static_cast<int>(minDimension * frequencyFontScale));
 
+    const QString text = ui->frequencyValue->text();
+    if (text.isEmpty()) {
+        return;
+    }
+
+    // Probe at a large reference size to get accurate text dimensions, then
+    // scale linearly to find the largest point size that fits in both directions.
     QFont font = ui->frequencyValue->font();
+    constexpr int probeSize = 200;
+    font.setPointSize(probeSize);
+    const QFontMetrics fm(font);
+    const int textWidth = fm.horizontalAdvance(text);
+    const int textHeight = fm.height();
+
+    if (textWidth <= 0 || textHeight <= 0) {
+        return;
+    }
+
+    const int maxFromWidth  = probeSize * availableWidth  / textWidth;
+    const int maxFromHeight = probeSize * availableHeight / textHeight;
+    const int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
     ui->frequencyValue->setFont(font);
 }
