@@ -364,14 +364,30 @@ void FreqDisplayGUI::updateFrequencyFont()
 
 void FreqDisplayGUI::applyTransparency()
 {
-    // Always keep the window-level stylesheet and the settings bar looking normal.
     setStyleSheet(m_normalStyleSheet);
-    ui->settingsContainer->setStyleSheet(QString());
 
-    // Apply or remove transparency on the display area only.
-    const QString displayStyle = m_settings.m_transparentBackground ? "background: transparent;" : QString();
-    ui->horizontalWidget->setStyleSheet(displayStyle);
-    ui->frequencyValue->setStyleSheet(displayStyle);
+    RollupContents *rollupContents = getRollupContents();
+
+    if (m_settings.m_transparentBackground)
+    {
+        // Clear the entire RollupContents area to alpha=0 so the compositor
+        // (WA_TranslucentBackground on the window) shows through in the display area.
+        rollupContents->setTransparentBackground(true);
+        // Have the settings bar paint its own opaque background over the cleared area
+        // so that the controls remain fully visible.
+        ui->settingsContainer->setAutoFillBackground(true);
+    }
+    else
+    {
+        rollupContents->setTransparentBackground(false);
+        // Restore the settings bar to its default (background painted by RollupContents).
+        ui->settingsContainer->setAutoFillBackground(false);
+    }
+
+    // Clear any stylesheet overrides left over from earlier implementations.
+    ui->settingsContainer->setStyleSheet(QString());
+    ui->horizontalWidget->setStyleSheet(QString());
+    ui->frequencyValue->setStyleSheet(QString());
 }
 
 void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
