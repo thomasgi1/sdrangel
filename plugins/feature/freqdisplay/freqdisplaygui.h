@@ -40,8 +40,6 @@ protected:
 
 private:
     Ui::FreqDisplayGUI* ui;
-    PluginAPI* m_pluginAPI;
-    FeatureUISet* m_featureUISet;
     FreqDisplay* m_freqDisplay;
     FreqDisplaySettings m_settings;
     MessageQueue m_inputMessageQueue;

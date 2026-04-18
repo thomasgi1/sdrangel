@@ -11,7 +11,6 @@ FreqDisplay::FreqDisplay(WebAPIAdapterInterface *webAPIAdapterInterface) :
     qDebug("FreqDisplay::FreqDisplay: webAPIAdapterInterface: %p", webAPIAdapterInterface);
     setObjectName(m_featureId);
     m_state = StIdle;
-    m_errorMessage = "FreqDisplay error";
 }
 
 bool FreqDisplay::handleMessage(const Message& cmd)

@@ -1,4 +1,5 @@
 #include <QFont>
+#include <QLocale>
 #include <QResizeEvent>
 
 #include "channel/channelwebapiutils.h"
@@ -50,14 +51,12 @@ bool FreqDisplayGUI::deserialize(const QByteArray& data)
 FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent) :
     FeatureGUI(parent),
     ui(new Ui::FreqDisplayGUI),
-    m_pluginAPI(pluginAPI),
-    m_featureUISet(featureUISet),
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
     m_availableChannelOrFeatureHandler(QStringList(), "RT"),
     m_doApplySettings(true)
 {
-    (void) m_pluginAPI;
-    (void) m_featureUISet;
+    (void) pluginAPI;
+    (void) featureUISet;
 
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
@@ -126,14 +125,17 @@ void FreqDisplayGUI::updateChannelList()
 
     int selectedIndex = -1;
 
-    for (int i = 0; i < m_availableChannels.size(); ++i)
+    int i = 0;
+    for (const auto& availableChannel : m_availableChannels)
     {
-        const QString longId = m_availableChannels.at(i).getLongId();
+        const QString longId = availableChannel.getLongId();
         ui->channels->addItem(longId);
 
         if (longId == m_settings.m_selectedChannel) {
             selectedIndex = i;
         }
+
+        ++i;
     }
 
     if ((selectedIndex < 0) && (m_availableChannels.size() > 0)) {
