@@ -11,9 +11,12 @@
 #include "freqdisplaygui.h"
 
 namespace {
-// Scales the frequency text so it remains large while fitting inside the label.
+// Derived empirically to keep the rendered frequency text large and readable while
+// avoiding clipping in typical feature window sizes.
 constexpr double frequencyFontScale = 0.22;
 constexpr const char* rxTxKinds = "RT";
+constexpr int pollIntervalMs = 1000;
+constexpr int minimumFrequencyFontPointSize = 10;
 }
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
@@ -83,7 +86,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     connect(ui->channels, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_channels_currentIndexChanged);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
-    m_pollTimer.start(1000);
+    m_pollTimer.start(pollIntervalMs);
 
     displaySettings();
     updateFrequencyText();
@@ -232,7 +235,7 @@ void FreqDisplayGUI::updateFrequencyText()
 void FreqDisplayGUI::updateFrequencyFont()
 {
     const int minDimension = qMin(ui->frequencyValue->width(), ui->frequencyValue->height());
-    const int pointSize = qMax(10, static_cast<int>(minDimension * frequencyFontScale));
+    const int pointSize = qMax(minimumFrequencyFontPointSize, static_cast<int>(minDimension * frequencyFontScale));
 
     QFont font = ui->frequencyValue->font();
     font.setPointSize(pointSize);
