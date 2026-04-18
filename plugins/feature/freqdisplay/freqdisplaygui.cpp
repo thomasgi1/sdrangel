@@ -11,8 +11,8 @@
 #include "freqdisplaygui.h"
 
 namespace {
-// Derived empirically to keep the rendered frequency text large and readable while
-// avoiding clipping in typical feature window sizes.
+// For typical feature windows this keeps the text close to ~22% of the smallest
+// widget dimension, which yields large readable digits without clipping.
 constexpr double frequencyFontScale = 0.22;
 constexpr const char* rxTxKinds = "RT";
 constexpr int pollIntervalMs = 1000;
@@ -217,10 +217,15 @@ void FreqDisplayGUI::updateFrequencyText()
     double centerFrequencyHz = 0.0;
     int offsetHz = 0;
 
-    if (!ChannelWebAPIUtils::getCenterFrequency(selectedChannel.m_superIndex, centerFrequencyHz)
-        || !ChannelWebAPIUtils::getFrequencyOffset(selectedChannel.m_superIndex, selectedChannel.m_index, offsetHz))
+    if (!ChannelWebAPIUtils::getCenterFrequency(selectedChannel.m_superIndex, centerFrequencyHz))
     {
         ui->frequencyValue->setText(tr("Frequency unavailable"));
+        updateFrequencyFont();
+        return;
+    }
+    if (!ChannelWebAPIUtils::getFrequencyOffset(selectedChannel.m_superIndex, selectedChannel.m_index, offsetHz))
+    {
+        ui->frequencyValue->setText(tr("Offset unavailable"));
         updateFrequencyFont();
         return;
     }
@@ -235,6 +240,9 @@ void FreqDisplayGUI::updateFrequencyText()
 void FreqDisplayGUI::updateFrequencyFont()
 {
     const int minDimension = qMin(ui->frequencyValue->width(), ui->frequencyValue->height());
+    if (minDimension <= 0) {
+        return;
+    }
     const int pointSize = qMax(minimumFrequencyFontPointSize, static_cast<int>(minDimension * frequencyFontScale));
 
     QFont font = ui->frequencyValue->font();
