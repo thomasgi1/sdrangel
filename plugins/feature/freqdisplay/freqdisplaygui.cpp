@@ -18,9 +18,6 @@ constexpr int minimumFrequencyFontPointSize = 10;
 // Reference point size used when probing text metrics in updateFrequencyFont().
 // Large enough that integer rounding in QFontMetrics is negligible.
 constexpr int fontProbePointSize = 200;
-// Stylesheet applied to this window when transparency is enabled.
-// The '*' universal selector cascades to every child widget.
-constexpr const char* transparentStyleSheet = "* { background: transparent; border: none; }";
 }
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
@@ -367,23 +364,14 @@ void FreqDisplayGUI::updateFrequencyFont()
 
 void FreqDisplayGUI::applyTransparency()
 {
-    if (m_settings.m_transparentBackground)
-    {
-        // Override the FeatureGUI stylesheet on the entire window using the '*'
-        // universal selector so that every child widget's background is also
-        // cleared.  Combined with WA_TranslucentBackground (set in the constructor)
-        // this makes the sub-window show whatever is rendered behind it in the
-        // MDI area instead of the normal solid background.
-        setStyleSheet(transparentStyleSheet);
-    }
-    else
-    {
-        // Restore the stylesheet that FeatureGUI set at construction time.
-        setStyleSheet(m_normalStyleSheet);
-        // Also clear any per-widget overrides from previous transparent runs.
-        ui->settingsContainer->setStyleSheet(QString());
-        ui->frequencyValue->setStyleSheet(QString());
-    }
+    // Always keep the window-level stylesheet and the settings bar looking normal.
+    setStyleSheet(m_normalStyleSheet);
+    ui->settingsContainer->setStyleSheet(QString());
+
+    // Apply or remove transparency on the display area only.
+    const QString displayStyle = m_settings.m_transparentBackground ? "background: transparent;" : QString();
+    ui->horizontalWidget->setStyleSheet(displayStyle);
+    ui->frequencyValue->setStyleSheet(displayStyle);
 }
 
 void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)

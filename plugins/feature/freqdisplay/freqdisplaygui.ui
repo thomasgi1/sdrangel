@@ -124,7 +124,7 @@
       <item>
        <widget class="ButtonSwitch" name="transparentBackground">
         <property name="toolTip">
-         <string>Toggle transparent window background</string>
+         <string>Toggle transparent background for the display area</string>
         </property>
         <property name="text">
          <string>T</string>
