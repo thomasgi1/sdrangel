@@ -11,6 +11,8 @@ struct FreqDisplaySettings
     QString m_selectedChannel;
     int m_workspaceIndex;
     QByteArray m_geometryBytes;
+    QString m_fontName;
+    bool m_transparentBackground;
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;

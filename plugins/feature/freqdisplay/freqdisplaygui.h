@@ -2,6 +2,7 @@
 #define INCLUDE_FEATURE_FREQDISPLAYGUI_H_
 
 #include <QTimer>
+#include <QFontComboBox>
 
 #include "availablechannelorfeaturehandler.h"
 #include "feature/featuregui.h"
@@ -56,10 +57,13 @@ private:
     void updateChannelList();
     void updateFrequencyText();
     void updateFrequencyFont();
+    void applyTransparency();
 
 private slots:
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
     void on_channels_currentIndexChanged(int index);
+    void on_fontFamily_currentFontChanged(const QFont& font);
+    void on_transparentBackground_toggled(bool checked);
     void pollSelectedChannel();
 };
 

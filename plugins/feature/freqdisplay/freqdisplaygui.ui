@@ -69,6 +69,40 @@
      </layout>
     </item>
     <item>
+     <layout class="QHBoxLayout" name="fontLayout">
+      <item>
+       <widget class="QLabel" name="fontLabel">
+        <property name="text">
+         <string>Font</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QFontComboBox" name="fontFamily">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="toolTip">
+         <string>Select font family for the frequency display</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="ButtonSwitch" name="transparentBackground">
+        <property name="toolTip">
+         <string>Toggle transparent window background</string>
+        </property>
+        <property name="text">
+         <string>T</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
      <widget class="QLabel" name="frequencyValue">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
@@ -93,6 +127,11 @@
    <extends>QWidget</extends>
    <header>gui/rollupcontents.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ButtonSwitch</class>
+   <extends>QToolButton</extends>
+   <header>gui/buttonswitch.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

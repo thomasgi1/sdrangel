@@ -3,6 +3,7 @@
 #include <QResizeEvent>
 
 #include "channel/channelwebapiutils.h"
+#include "gui/buttonswitch.h"
 
 #include "feature/featureuiset.h"
 
@@ -82,6 +83,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     m_availableChannelOrFeatureHandler.scanAvailableChannelsAndFeatures();
 
     connect(ui->channels, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_channels_currentIndexChanged);
+    connect(ui->fontFamily, &QFontComboBox::currentFontChanged, this, &FreqDisplayGUI::on_fontFamily_currentFontChanged);
+    connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
     m_pollTimer.start(pollIntervalMs);
 
@@ -105,6 +108,18 @@ void FreqDisplayGUI::displaySettings()
     setWindowTitle(m_settings.m_title);
     setTitle(m_settings.m_title);
 
+    // Populate font combo box with the saved font (or system default if empty)
+    ui->fontFamily->blockSignals(true);
+    if (!m_settings.m_fontName.isEmpty()) {
+        ui->fontFamily->setCurrentFont(QFont(m_settings.m_fontName));
+    }
+    ui->fontFamily->blockSignals(false);
+
+    ui->transparentBackground->blockSignals(true);
+    ui->transparentBackground->setChecked(m_settings.m_transparentBackground);
+    ui->transparentBackground->blockSignals(false);
+
+    applyTransparency();
     updateChannelList();
 }
 
@@ -119,6 +134,8 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("selectedChannel");
     settingsKeys.append("workspaceIndex");
     settingsKeys.append("geometryBytes");
+    settingsKeys.append("fontName");
+    settingsKeys.append("transparentBackground");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -247,9 +264,14 @@ void FreqDisplayGUI::updateFrequencyFont()
         return;
     }
 
+    // Build a font with the user-chosen family (or the widget's current family if none saved)
+    QFont font = ui->frequencyValue->font();
+    if (!m_settings.m_fontName.isEmpty()) {
+        font.setFamily(m_settings.m_fontName);
+    }
+
     // Probe at a large reference size to get accurate text dimensions, then
     // scale linearly to find the largest point size that fits in both directions.
-    QFont font = ui->frequencyValue->font();
     constexpr int probeSize = 200;
     font.setPointSize(probeSize);
     const QFontMetrics fm(font);
@@ -265,6 +287,36 @@ void FreqDisplayGUI::updateFrequencyFont()
     const int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
     ui->frequencyValue->setFont(font);
+}
+
+void FreqDisplayGUI::applyTransparency()
+{
+    if (m_settings.m_transparentBackground)
+    {
+        // Make the content area and frequency label fully transparent so that
+        // only the text is visible over whatever is behind the window.
+        ui->settingsContainer->setStyleSheet("background-color: transparent;");
+        ui->frequencyValue->setStyleSheet("background-color: transparent;");
+    }
+    else
+    {
+        ui->settingsContainer->setStyleSheet(QString());
+        ui->frequencyValue->setStyleSheet(QString());
+    }
+}
+
+void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)
+{
+    m_settings.m_fontName = font.family();
+    applySettings();
+    updateFrequencyFont();
+}
+
+void FreqDisplayGUI::on_transparentBackground_toggled(bool checked)
+{
+    m_settings.m_transparentBackground = checked;
+    applyTransparency();
+    applySettings();
 }
 
 void FreqDisplayGUI::resizeEvent(QResizeEvent *event)
