@@ -176,7 +176,6 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     (void) pluginAPI;
     (void) featureUISet;
 
-
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
 
@@ -204,8 +203,13 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     connect(ui->showUnits, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_showUnits_toggled);
     connect(ui->freqDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_freqDecimalPlaces_valueChanged);
     connect(ui->powerDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_powerDecimalPlaces_valueChanged);
+    connect(ui->textColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_textColor_clicked);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
     m_pollTimer.start(pollIntervalMs);
+
+#ifndef QT_TEXTTOSPEECH_FOUND
+    ui->speech->setVisible(false);
+#endif
 
     displaySettings();
     updateFrequencyText();
@@ -596,7 +600,15 @@ void FreqDisplayGUI::applySpeech()
     if (m_settings.m_speechEnabled && !m_speech)
     {
         m_speech = new QTextToSpeech(this);
-        connect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
+        if (m_speech)
+        {
+            connect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
+        }
+        else
+        {
+            ui->speech->setChecked(false);
+            ui->speech->setEnabled(false);
+        }
     }
 #endif
 }
@@ -640,9 +652,18 @@ void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
 
 void FreqDisplayGUI::on_speech_toggled(bool checked)
 {
+    bool hadSpeech = m_settings.m_speechEnabled;
     m_settings.m_speechEnabled = checked;
     applySpeech();
     applySettings();
+#ifdef QT_TEXTTOSPEECH_FOUND
+    if (checked && !hadSpeech && m_speech)
+    {
+        // Just enabled speech: speak the current text immediately
+        const QString speechText = textForSpeech(ui->frequencyValue->text());
+        m_speech->say(speechText);
+    }
+#endif
 }
 
 void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)

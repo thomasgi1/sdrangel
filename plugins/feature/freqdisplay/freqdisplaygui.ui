@@ -34,6 +34,9 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+   <property name="windowTitle">
+    <string>Settings</string>
+   </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="leftMargin">
      <number>4</number>
@@ -304,6 +307,9 @@ When in transparent mode:
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
+   </property>
+   <property name="windowTitle">
+    <string>Display</string>
    </property>
    <layout class="QHBoxLayout" name="display">
     <property name="leftMargin">
