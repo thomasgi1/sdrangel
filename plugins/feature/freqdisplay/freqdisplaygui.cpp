@@ -515,7 +515,7 @@ void FreqDisplayGUI::updateFrequencyFont()
     for (const QString& line : lines) {
         maxLineWidth = qMax(maxLineWidth, fm.horizontalAdvance(line));
     }
-    const int lineHeight = fm.height();
+    const int lineHeight = fm.lineSpacing();
 
     if (maxLineWidth <= 0 || lineHeight <= 0) {
         return;
@@ -523,29 +523,35 @@ void FreqDisplayGUI::updateFrequencyFont()
 
     maxLineWidth += 5; // Add some space for a border
 
-    const int heightPerLine = availableHeight / numLines;
     const int maxFromWidth  = fontProbePointSize * availableWidth  / maxLineWidth;
-    const int maxFromHeight = fontProbePointSize * heightPerLine   / lineHeight;
+    const int maxFromHeight = fontProbePointSize * availableHeight / (lineHeight * numLines);
     int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
 
     // Verify the text actually fits at the calculated point size.  The linear
     // interpolation from fontProbePointSize can be slightly inaccurate due to
     // font hinting or non-linear glyph metrics at the target size; if the text
-    // would overflow and trigger word-wrap, reduce by one point.  This is a
-    // single-step correction that is sufficient because the interpolation error
-    // is at most a fraction of one point size.
-    if (pointSize > minimumFrequencyFontPointSize)
+    // would overflow either horizontally or vertically, reduce by one point at a
+    // time until it fits.
+    while (pointSize > minimumFrequencyFontPointSize)
     {
         const QFontMetrics verifyFm(font);
+        bool overflow = false;
         for (const QString& line : lines)
         {
             if (verifyFm.horizontalAdvance(line) > availableWidth)
             {
-                font.setPointSize(--pointSize);
+                overflow = true;
                 break;
             }
         }
+        if (!overflow && (verifyFm.lineSpacing() * numLines > availableHeight)) {
+            overflow = true;
+        }
+        if (!overflow) {
+            break;
+        }
+        font.setPointSize(--pointSize);
     }
 
     label->setFont(font);
