@@ -593,9 +593,9 @@ void FreqDisplayGUI::applyTransparency()
                     this, &FreqDisplayGUI::onExitTransparentMode);
             connect(m_overlay, &FreqDisplayOverlay::resized,
                     this, &FreqDisplayGUI::updateFrequencyFont);
-            // Position the overlay at the current screen position of FreqDisplayGUI.
-            m_overlay->move(mapToGlobal(QPoint(0, 0)));
-            m_overlay->resize(size());
+            // Position the overlay at the current screen position of frequencyValue widget.
+            m_overlay->move(ui->frequencyValue->mapToGlobal(QPoint(0, 0)));
+            m_overlay->resize(ui->frequencyValue->size());
             applyTextColor();
             m_overlay->show();
         }
