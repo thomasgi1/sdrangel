@@ -2,6 +2,7 @@
 #include <QLocale>
 #include <QMdiArea>
 #include <QResizeEvent>
+#include <QSpinBox>
 #include <QTimer>
 
 #include "channel/channelwebapiutils.h"
@@ -20,6 +21,9 @@ constexpr int minimumFrequencyFontPointSize = 10;
 // Reference point size used when probing text metrics in updateFrequencyFont().
 // Large enough that integer rounding in QFontMetrics is negligible.
 constexpr int fontProbePointSize = 200;
+constexpr double kHzDivisor = 1e3;
+constexpr double MHzDivisor = 1e6;
+constexpr double GHzDivisor = 1e9;
 
 #ifdef QT_TEXTTOSPEECH_FOUND
 // Expand display-text unit abbreviations to full spoken words so that TTS
@@ -117,6 +121,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
     connect(ui->frequencyUnits, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_frequencyUnits_currentIndexChanged);
     connect(ui->showUnits, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_showUnits_toggled);
+    connect(ui->freqDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_freqDecimalPlaces_valueChanged);
+    connect(ui->powerDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_powerDecimalPlaces_valueChanged);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
     m_pollTimer.start(pollIntervalMs);
 
@@ -168,6 +174,13 @@ void FreqDisplayGUI::displaySettings()
     ui->showUnits->setChecked(m_settings.m_showUnits);
     ui->showUnits->blockSignals(false);
 
+    ui->powerDecimalPlaces->blockSignals(true);
+    ui->powerDecimalPlaces->setValue(m_settings.m_powerDecimalPlaces);
+    ui->powerDecimalPlaces->blockSignals(false);
+
+    // Must come after frequencyUnits is set so the range/enabled state is correct
+    updateFreqDecimalSpinbox();
+
     applyTransparency();
     applySpeech();
     updateChannelList();
@@ -190,6 +203,8 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("speechEnabled");
     settingsKeys.append("frequencyUnits");
     settingsKeys.append("showUnits");
+    settingsKeys.append("freqDecimalPlaces");
+    settingsKeys.append("powerDecimalPlaces");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -349,8 +364,8 @@ void FreqDisplayGUI::updateFrequencyText()
         else
         {
             powerText = m_settings.m_showUnits
-                ? QString("%1 dB").arg(power, 0, 'f', 1)
-                : QString("%1").arg(power, 0, 'f', 1);
+                ? QString("%1 dB").arg(power, 0, 'f', m_settings.m_powerDecimalPlaces)
+                : QString("%1").arg(power, 0, 'f', m_settings.m_powerDecimalPlaces);
         }
     }
 
@@ -560,6 +575,7 @@ void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)
 void FreqDisplayGUI::on_frequencyUnits_currentIndexChanged(int index)
 {
     m_settings.m_frequencyUnits = static_cast<FreqDisplaySettings::FrequencyUnits>(index);
+    updateFreqDecimalSpinbox();
     applySettings();
     updateFrequencyText();
 }
@@ -571,23 +587,63 @@ void FreqDisplayGUI::on_showUnits_toggled(bool checked)
     updateFrequencyText();
 }
 
+void FreqDisplayGUI::updateFreqDecimalSpinbox()
+{
+    const FreqDisplaySettings::FrequencyUnits units = m_settings.m_frequencyUnits;
+    const bool enabled = (units != FreqDisplaySettings::Hz);
+    ui->freqDecimalPlaces->setEnabled(enabled);
+    ui->freqDecimalPlacesLabel->setEnabled(enabled);
+
+    if (enabled)
+    {
+        int maxDecimals = 3; // kHz
+        if (units == FreqDisplaySettings::MHz) {
+            maxDecimals = 6;
+        } else if (units == FreqDisplaySettings::GHz) {
+            maxDecimals = 9;
+        }
+
+        ui->freqDecimalPlaces->blockSignals(true);
+        ui->freqDecimalPlaces->setMaximum(maxDecimals);
+        // Clamp stored value to new maximum so the spinbox and setting stay in sync
+        m_settings.m_freqDecimalPlaces = qMin(m_settings.m_freqDecimalPlaces, maxDecimals);
+        ui->freqDecimalPlaces->setValue(m_settings.m_freqDecimalPlaces);
+        ui->freqDecimalPlaces->blockSignals(false);
+    }
+}
+
+void FreqDisplayGUI::on_freqDecimalPlaces_valueChanged(int value)
+{
+    m_settings.m_freqDecimalPlaces = value;
+    applySettings();
+    updateFrequencyText();
+}
+
+void FreqDisplayGUI::on_powerDecimalPlaces_valueChanged(int value)
+{
+    m_settings.m_powerDecimalPlaces = value;
+    applySettings();
+    updateFrequencyText();
+}
+
 QString FreqDisplayGUI::formatFrequency(qint64 frequencyHz) const
 {
     const QLocale locale;
     const bool showUnits = m_settings.m_showUnits;
+    const int dp = m_settings.m_freqDecimalPlaces;
 
     switch (m_settings.m_frequencyUnits)
     {
     case FreqDisplaySettings::kHz: {
-        const QString s = locale.toString(frequencyHz / 1e3, 'f', 3);
+        const QString s = locale.toString(frequencyHz / kHzDivisor, 'f', dp);
         return showUnits ? s + tr(" kHz") : s;
     }
     case FreqDisplaySettings::MHz: {
-        const QString s = locale.toString(frequencyHz / 1e6, 'f', 6);
+        const QString s = locale.toString(frequencyHz / MHzDivisor, 'f', dp);
         return showUnits ? s + tr(" MHz") : s;
     }
     case FreqDisplaySettings::GHz: {
-        const QString s = locale.toString(frequencyHz / 1e9, 'f', 9);
+        const QString s = locale.toString(frequencyHz / GHzDivisor, 'f', dp);
         return showUnits ? s + tr(" GHz") : s;
     }
     case FreqDisplaySettings::Hz:

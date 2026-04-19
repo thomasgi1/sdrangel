@@ -19,6 +19,8 @@ void FreqDisplaySettings::resetToDefaults()
     m_speechEnabled = false;
     m_frequencyUnits = Hz;
     m_showUnits = true;
+    m_freqDecimalPlaces = 3;
+    m_powerDecimalPlaces = 1;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -35,6 +37,8 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeBool(8, m_speechEnabled);
     s.writeS32(9, static_cast<int>(m_frequencyUnits));
     s.writeBool(10, m_showUnits);
+    s.writeS32(11, m_freqDecimalPlaces);
+    s.writeS32(12, m_powerDecimalPlaces);
 
     return s.final();
 }
@@ -69,6 +73,8 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     d.readS32(9, &frequencyUnits, 0);
     m_frequencyUnits = static_cast<FrequencyUnits>(frequencyUnits);
     d.readBool(10, &m_showUnits, true);
+    d.readS32(11, &m_freqDecimalPlaces, 3);
+    d.readS32(12, &m_powerDecimalPlaces, 1);
 
     return true;
 }
@@ -104,5 +110,11 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("showUnits")) {
         m_showUnits = settings.m_showUnits;
+    }
+    if (settingsKeys.contains("freqDecimalPlaces")) {
+        m_freqDecimalPlaces = settings.m_freqDecimalPlaces;
+    }
+    if (settingsKeys.contains("powerDecimalPlaces")) {
+        m_powerDecimalPlaces = settings.m_powerDecimalPlaces;
     }
 }

@@ -30,6 +30,8 @@ struct FreqDisplaySettings
     bool m_speechEnabled;
     FrequencyUnits m_frequencyUnits; //!< Units to use when displaying frequency
     bool m_showUnits;                //!< Whether to append unit labels to displayed values
+    int m_freqDecimalPlaces;         //!< Decimal places for frequency value (max depends on units: kHz→3, MHz→6, GHz→9)
+    int m_powerDecimalPlaces;        //!< Decimal places for power value (0–3)
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;

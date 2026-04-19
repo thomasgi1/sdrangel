@@ -71,6 +71,7 @@ private:
     void updateChannelList();
     void updateFrequencyText();
     void updateFrequencyFont();
+    void updateFreqDecimalSpinbox();
     void applyTransparency();
     void applySpeech();
     QString formatFrequency(qint64 frequencyHz) const;
@@ -84,6 +85,8 @@ private slots:
     void on_transparentBackground_toggled(bool checked);
     void on_frequencyUnits_currentIndexChanged(int index);
     void on_showUnits_toggled(bool checked);
+    void on_freqDecimalPlaces_valueChanged(int value);
+    void on_powerDecimalPlaces_valueChanged(int value);
     void pollSelectedChannel();
 #ifdef QT_TEXTTOSPEECH_FOUND
     void speechStateChanged(QTextToSpeech::State state);
