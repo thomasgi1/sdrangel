@@ -293,7 +293,7 @@ When in transparent mode:
     </item>
    </layout>
   </widget>
-  <widget class="QLabel" name="frequencyValue">
+  <widget class="FrequencyLabel" name="frequencyValue">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -317,6 +317,11 @@ When in transparent mode:
   </widget>
  </widget>
  <customwidgets>
+  <customwidget>
+   <class>FrequencyLabel</class>
+   <extends>QLabel</extends>
+   <header>freqdisplaygui.h</header>
+  </customwidget>
   <customwidget>
    <class>RollupContents</class>
    <extends>QWidget</extends>

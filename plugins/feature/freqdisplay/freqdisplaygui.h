@@ -40,6 +40,17 @@ class FeatureUISet;
 class FreqDisplay;
 class Feature;
 
+/// QLabel subclass that always reports a small minimum size hint so that the
+/// FreqDisplayGUI window can be resized freely without the label preventing
+/// the window from being made small.
+class FrequencyLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    explicit FrequencyLabel(QWidget *parent = nullptr) : QLabel(parent) {}
+    QSize minimumSizeHint() const override { return QSize(50, 10); }
+};
+
 namespace Ui {
 class FreqDisplayGUI;
 }
