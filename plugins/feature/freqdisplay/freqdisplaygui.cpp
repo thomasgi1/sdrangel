@@ -365,8 +365,28 @@ void FreqDisplayGUI::updateFrequencyFont()
     const int heightPerLine = availableHeight / numLines;
     const int maxFromWidth  = fontProbePointSize * availableWidth  / maxLineWidth;
     const int maxFromHeight = fontProbePointSize * heightPerLine   / lineHeight;
-    const int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
+    int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
+
+    // Verify the text actually fits at the calculated point size.  The linear
+    // interpolation from fontProbePointSize can be slightly inaccurate due to
+    // font hinting or non-linear glyph metrics at the target size; if the text
+    // would overflow and trigger word-wrap, reduce by one point.  This is a
+    // single-step correction that is sufficient because the interpolation error
+    // is at most a fraction of one point size.
+    if (pointSize > minimumFrequencyFontPointSize)
+    {
+        const QFontMetrics verifyFm(font);
+        for (const QString& line : lines)
+        {
+            if (verifyFm.horizontalAdvance(line) > availableWidth)
+            {
+                font.setPointSize(--pointSize);
+                break;
+            }
+        }
+    }
+
     ui->frequencyValue->setFont(font);
 }
 
@@ -402,9 +422,11 @@ void FreqDisplayGUI::applyTransparency()
             QTimer::singleShot(0, this, [this, globalPos]() {
                 if (!m_savedMdi) { return; }
                 m_savedMdi->removeSubWindow(this);
-                // Make this a proper top-level frameless overlay window so the OS
-                // compositor can blend the transparent pixels against everything beneath.
-                setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+                // FeatureGUI is always frameless (Qt::FramelessWindowHint is set in
+                // FeatureGUI's constructor) and removeSubWindow() already sets the
+                // Qt::Window flag.  Only the always-on-top hint needs to be added so
+                // the overlay floats above the main window.
+                setWindowFlag(Qt::WindowStaysOnTopHint, true);
                 move(globalPos);
                 resize(m_mdiGeometry.size());
                 show();
@@ -432,11 +454,16 @@ void FreqDisplayGUI::applyTransparency()
             const QPoint mdiPos = savedMdi->viewport()->mapFromGlobal(currentGlobalPos);
             // Defer re-embedding to the next event loop iteration.
             QTimer::singleShot(0, this, [this, savedMdi, mdiPos, savedMdiGeometry]() {
-                // Clear the translucency attribute before reparenting so the native
-                // window is recreated as an opaque window.  This restores the normal
-                // title bar and border when the window is not in transparent mode.
+                // Hide first to prevent a flash of the overlay appearing as an
+                // opaque window before it is re-embedded in the MDI area.
+                hide();
+                // Clear translucency before native-window recreation so the
+                // window is rebuilt as opaque.
                 setAttribute(Qt::WA_TranslucentBackground, false);
-                showNormal();
+                // Remove the WindowStaysOnTopHint that was added when entering
+                // transparent mode; without this the re-embedded QMdiSubWindow
+                // retains the hint and the title bar / border do not reappear.
+                setWindowFlag(Qt::WindowStaysOnTopHint, false);
                 savedMdi->addSubWindow(this);
                 show();
                 move(mdiPos);
