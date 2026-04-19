@@ -336,7 +336,9 @@ void FeatureGUI::sizeToContents()
     size = size.expandedTo(m_topLayout->minimumSize());
     size.setHeight(size.height() + getAdditionalHeight());
     size.setWidth(size.width() + m_resizer.m_gripSize * 2);
-    setMinimumSize(size);
+    // m_resizer enforces minimumSizeHint() while m_sizeGripBottomRight enforces minimumSize().
+    // Ensure both are consistent by making minimumSize() at least as large as minimumSizeHint().
+    setMinimumSize(size.expandedTo(minimumSizeHint()));
 }
 
 void FeatureGUI::maximizeWindow()
