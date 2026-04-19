@@ -16,12 +16,15 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.          //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <QContextMenuEvent>
 #include <QFont>
+#include <QLabel>
 #include <QLocale>
-#include <QMdiArea>
+#include <QMenu>
 #include <QResizeEvent>
 #include <QSpinBox>
 #include <QTimer>
+#include <QVBoxLayout>
 
 #include "channel/channelwebapiutils.h"
 #include "gui/buttonswitch.h"
@@ -59,7 +62,68 @@ QString textForSpeech(const QString& displayText)
     return s;
 }
 #endif
+} // anonymous namespace
+
+// --- FreqDisplayOverlay ---------------------------------------------------
+
+FreqDisplayOverlay::FreqDisplayOverlay(QWidget* parent)
+    : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool),
+      m_dragging(false)
+{
+    setAttribute(Qt::WA_TranslucentBackground);
+    setAttribute(Qt::WA_DeleteOnClose, false);
+
+    m_label = new QLabel(this);
+    m_label->setAlignment(Qt::AlignCenter);
+    m_label->setWordWrap(true);
+    m_label->setStyleSheet("color: white;");
+
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addWidget(m_label);
+    setLayout(layout);
 }
+
+void FreqDisplayOverlay::contextMenuEvent(QContextMenuEvent* event)
+{
+    QMenu menu(this);
+    QAction* exitAction = menu.addAction(tr("Exit transparent mode"));
+    if (menu.exec(event->globalPos()) == exitAction) {
+        emit exitTransparentMode();
+    }
+}
+
+void FreqDisplayOverlay::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    emit resized();
+}
+
+void FreqDisplayOverlay::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        m_dragging = true;
+        m_dragStartPos = event->globalPos() - pos();
+    }
+    QWidget::mousePressEvent(event);
+}
+
+void FreqDisplayOverlay::mouseMoveEvent(QMouseEvent* event)
+{
+    if (m_dragging && (event->buttons() & Qt::LeftButton)) {
+        move(event->globalPos() - m_dragStartPos);
+    }
+    QWidget::mouseMoveEvent(event);
+}
+
+void FreqDisplayOverlay::mouseReleaseEvent(QMouseEvent* event)
+{
+    m_dragging = false;
+    QWidget::mouseReleaseEvent(event);
+}
+
+// --- FreqDisplayGUI -------------------------------------------------------
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
 {
@@ -105,7 +169,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
     m_availableChannelOrFeatureHandler(QStringList(), rxTxChannelKinds),
     m_doApplySettings(true),
-    m_savedMdi(nullptr)
+    m_overlay(nullptr)
 {
     (void) pluginAPI;
     (void) featureUISet;
@@ -113,9 +177,6 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
-    // Capture the stylesheet that FeatureGUI set in its constructor so that
-    // applyTransparency() can restore it when transparency is disabled.
-    m_normalStyleSheet = styleSheet();
 
     RollupContents *rollupContents = getRollupContents();
     ui->setupUi(rollupContents);
@@ -159,6 +220,7 @@ FreqDisplayGUI::~FreqDisplayGUI()
         m_speech = nullptr;
     }
 #endif
+    delete m_overlay;
     delete ui;
 }
 
@@ -308,6 +370,9 @@ void FreqDisplayGUI::updateFrequencyText()
 {
     auto setLabelText = [this](const QString& text) {
         ui->frequencyValue->setText(text);
+        if (m_overlay) {
+            m_overlay->label()->setText(text);
+        }
 #ifdef QT_TEXTTOSPEECH_FOUND
         if (m_settings.m_speechEnabled && m_speech && (text != m_previousDisplayText))
         {
@@ -410,19 +475,20 @@ void FreqDisplayGUI::updateFrequencyText()
 
 void FreqDisplayGUI::updateFrequencyFont()
 {
-    const int availableWidth = ui->frequencyValue->width();
-    const int availableHeight = ui->frequencyValue->height();
+    QLabel* label = m_overlay ? m_overlay->label() : ui->frequencyValue;
+    const int availableWidth = label->width();
+    const int availableHeight = label->height();
     if (availableWidth <= 0 || availableHeight <= 0) {
         return;
     }
 
-    const QString text = ui->frequencyValue->text();
+    const QString text = label->text();
     if (text.isEmpty()) {
         return;
     }
 
     // Build a font with the user-chosen family (or the widget's current family if none saved)
-    QFont font = ui->frequencyValue->font();
+    QFont font = label->font();
     if (!m_settings.m_fontName.isEmpty()) {
         font.setFamily(m_settings.m_fontName);
     }
@@ -473,102 +539,41 @@ void FreqDisplayGUI::updateFrequencyFont()
         }
     }
 
-    ui->frequencyValue->setFont(font);
+    label->setFont(font);
 }
 
 void FreqDisplayGUI::applyTransparency()
 {
-    setStyleSheet(m_normalStyleSheet);
-
-    RollupContents *rollupContents = getRollupContents();
-
     if (m_settings.m_transparentBackground)
     {
-        // WA_TranslucentBackground must be set before the native window handle is
-        // created or recreated.  Setting it here (before the deferred lambda's
-        // setWindowFlags call, which forces native-window recreation) is the
-        // correct place.  For the startup case where the widget has not yet been
-        // shown, setting it here is also safe.
-        setAttribute(Qt::WA_TranslucentBackground, true);
-
-        // Detach from the MDI area so that WA_TranslucentBackground operates at the
-        // OS compositor level.  Inside a QMdiArea the attribute only affects Qt's
-        // internal backing store, which only passes through for QOpenGLWidget children
-        // (GPU compositing path) but not for ordinary software-rendered siblings or
-        // external application windows.
-        if (!m_savedMdi && mdiArea())
+        // Only create the overlay if this widget is already visible on screen.
+        // When called at startup (before the widget has been shown and placed by
+        // the workspace), skip overlay creation so that the window appears at its
+        // saved MDI position rather than at (0,0).
+        if (!m_overlay && isVisible())
         {
-            m_savedMdi = mdiArea();
-            // Save position in MDI viewport coordinates and convert to screen
-            // coordinates before the window is reparented.
-            m_mdiGeometry = geometry();
-            const QPoint globalPos = m_savedMdi->viewport()->mapToGlobal(m_mdiGeometry.topLeft());
-            // Defer the reparenting to the next event loop iteration so that any
-            // in-progress paint or layout event completes first.
-            QTimer::singleShot(0, this, [this, globalPos]() {
-                if (!m_savedMdi) { return; }
-                m_savedMdi->removeSubWindow(this);
-                // FeatureGUI is always frameless (Qt::FramelessWindowHint is set in
-                // FeatureGUI's constructor) and removeSubWindow() already sets the
-                // Qt::Window flag.  Only the always-on-top hint needs to be added so
-                // the overlay floats above the main window.
-                setWindowFlag(Qt::WindowStaysOnTopHint, true);
-                move(globalPos);
-                resize(m_mdiGeometry.size());
-                show();
-            });
+            m_overlay = new FreqDisplayOverlay();
+            m_overlay->label()->setText(ui->frequencyValue->text());
+            connect(m_overlay, &FreqDisplayOverlay::exitTransparentMode,
+                    this, &FreqDisplayGUI::onExitTransparentMode);
+            connect(m_overlay, &FreqDisplayOverlay::resized,
+                    this, &FreqDisplayGUI::updateFrequencyFont);
+            // Position the overlay at the current screen position of FreqDisplayGUI.
+            m_overlay->move(mapToGlobal(QPoint(0, 0)));
+            m_overlay->resize(size());
+            m_overlay->show();
         }
-
-        rollupContents->setTransparentBackground(true);
-        ui->settingsContainer->setAutoFillBackground(true);
-        // Hide the controls bar so only frequencyValue fills the window.
-        // RollupContents::arrangeRollups() is triggered automatically by the
-        // Hide event and will reposition/resize horizontalWidget to use all
-        // available space.
-        ui->settingsContainer->hide();
+        hide();
     }
     else
     {
-        if (m_savedMdi)
+        if (m_overlay)
         {
-            QMdiArea* savedMdi = m_savedMdi;
-            const QRect savedMdiGeometry = m_mdiGeometry;
-            m_savedMdi = nullptr;
-            // Convert current screen position back to MDI viewport coordinates so
-            // the window reappears where the user last placed it.
-            const QPoint currentGlobalPos = mapToGlobal(QPoint(0, 0));
-            const QPoint mdiPos = savedMdi->viewport()->mapFromGlobal(currentGlobalPos);
-            // Defer re-embedding to the next event loop iteration.
-            QTimer::singleShot(0, this, [this, savedMdi, mdiPos, savedMdiGeometry]() {
-                // Re-embed in the MDI area first. QMdiArea::addSubWindow()
-                // reparents this QMdiSubWindow into the MDI viewport using an
-                // XReparentWindow operation, which does not require any
-                // window-manager round-trips.  Only AFTER the widget is a child
-                // (non-top-level) is it safe to clear WA_TranslucentBackground
-                // and WindowStaysOnTopHint: clearing those flags on a visible
-                // top-level window forces native window destruction + recreation
-                // plus WM state-change negotiation, which can deadlock on some
-                // compositors.
-                savedMdi->addSubWindow(this);
-                setAttribute(Qt::WA_TranslucentBackground, false);
-                setWindowFlag(Qt::WindowStaysOnTopHint, false);
-                show();
-                move(mdiPos);
-                resize(savedMdiGeometry.size());
-                // On Windows, clearing WA_TranslucentBackground forces native
-                // window handle recreation.  Schedule a repaint so the FeatureGUI
-                // border and title bar are drawn correctly after recreation.
-                update();
-            });
+            delete m_overlay;
+            m_overlay = nullptr;
         }
-
-        rollupContents->setTransparentBackground(false);
-        ui->settingsContainer->setAutoFillBackground(false);
-        ui->settingsContainer->setStyleSheet(QString());
-        ui->horizontalWidget->setStyleSheet(QString());
-        ui->frequencyValue->setStyleSheet(QString());
-        // Restore the controls bar that was hidden while in transparent mode.
-        ui->settingsContainer->show();
+        show();
+        updateFrequencyFont();
     }
 }
 
@@ -689,6 +694,16 @@ QString FreqDisplayGUI::formatFrequency(qint64 frequencyHz) const
 void FreqDisplayGUI::on_transparentBackground_toggled(bool checked)
 {
     m_settings.m_transparentBackground = checked;
+    applyTransparency();
+    applySettings();
+}
+
+void FreqDisplayGUI::onExitTransparentMode()
+{
+    m_settings.m_transparentBackground = false;
+    ui->transparentBackground->blockSignals(true);
+    ui->transparentBackground->setChecked(false);
+    ui->transparentBackground->blockSignals(false);
     applyTransparency();
     applySettings();
 }

@@ -19,6 +19,8 @@
 #ifndef INCLUDE_FEATURE_FREQDISPLAYGUI_H_
 #define INCLUDE_FEATURE_FREQDISPLAYGUI_H_
 
+#include <QLabel>
+#include <QPoint>
 #include <QTimer>
 #include <QFontComboBox>
 
@@ -36,11 +38,39 @@ class PluginAPI;
 class FeatureUISet;
 class FreqDisplay;
 class Feature;
-class QMdiArea;
 
 namespace Ui {
 class FreqDisplayGUI;
 }
+
+/// Frameless, transparent top-level overlay window used when transparent-background
+/// mode is active.  Shows a single label with the frequency/power text and
+/// provides a right-click context menu to exit transparent mode.
+class FreqDisplayOverlay : public QWidget
+{
+    Q_OBJECT
+public:
+    explicit FreqDisplayOverlay(QWidget* parent = nullptr);
+
+    /// Returns the label that displays the frequency/power text.
+    QLabel* label() { return m_label; }
+
+signals:
+    void exitTransparentMode();
+    void resized();
+
+protected:
+    void contextMenuEvent(QContextMenuEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
+private:
+    QLabel* m_label;
+    bool m_dragging;
+    QPoint m_dragStartPos;
+};
 
 class FreqDisplayGUI : public FeatureGUI
 {
@@ -71,10 +101,8 @@ private:
     AvailableChannelOrFeatureList m_availableChannels;
     QTimer m_pollTimer;
     bool m_doApplySettings;
-    QString m_normalStyleSheet; ///< Stylesheet set by FeatureGUI, saved so it can be restored when transparency is disabled
     QString m_previousDisplayText; ///< Last text set on frequencyValue, used to detect changes for speech
-    QMdiArea* m_savedMdi;   ///< MDI area saved when window is detached for transparent-background mode
-    QRect m_mdiGeometry;    ///< Window geometry (in MDI viewport coordinates) saved before detaching
+    FreqDisplayOverlay* m_overlay; ///< Transparent overlay window shown when transparent-background mode is active
 
 #ifdef QT_TEXTTOSPEECH_FOUND
     QTextToSpeech *m_speech = nullptr;
@@ -106,6 +134,7 @@ private slots:
     void on_freqDecimalPlaces_valueChanged(int value);
     void on_powerDecimalPlaces_valueChanged(int value);
     void pollSelectedChannel();
+    void onExitTransparentMode();
 #ifdef QT_TEXTTOSPEECH_FOUND
     void speechStateChanged(QTextToSpeech::State state);
 #endif
