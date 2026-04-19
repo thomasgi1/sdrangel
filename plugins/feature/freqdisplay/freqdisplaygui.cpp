@@ -555,6 +555,10 @@ void FreqDisplayGUI::applyTransparency()
                 show();
                 move(mdiPos);
                 resize(savedMdiGeometry.size());
+                // On Windows, clearing WA_TranslucentBackground forces native
+                // window handle recreation.  Schedule a repaint so the FeatureGUI
+                // border and title bar are drawn correctly after recreation.
+                update();
             });
         }
 
