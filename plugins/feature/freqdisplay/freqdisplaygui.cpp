@@ -103,6 +103,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     displaySettings();
     updateFrequencyText();
+    m_resizer.enableChildMouseTracking();
 }
 
 FreqDisplayGUI::~FreqDisplayGUI()
