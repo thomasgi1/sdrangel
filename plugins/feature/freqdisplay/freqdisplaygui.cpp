@@ -39,24 +39,12 @@
 #include "freqdisplay.h"
 #include "freqdisplaygui.h"
 
-namespace {
-constexpr const char* rxTxChannelKinds = "RT";
-constexpr int pollIntervalMs = 1000;
-constexpr int minimumFrequencyFontPointSize = 10;
-// Reference point size used when probing text metrics in updateFrequencyFont().
-// Large enough that integer rounding in QFontMetrics is negligible.
-constexpr int fontProbePointSize = 200;
-constexpr double kHzDivisor = 1e3;
-constexpr double MHzDivisor = 1e6;
-constexpr double GHzDivisor = 1e9;
-constexpr double dropShadowBlurRadius = 10.0;
-constexpr double dropShadowOffsetX = 2.0;
-constexpr double dropShadowOffsetY = 2.0;
+// --- FreqDisplayOverlay ---------------------------------------------------
 
 #ifdef QT_TEXTTOSPEECH_FOUND
 // Expand display-text unit abbreviations to full spoken words so that TTS
 // engines read them naturally rather than letter-by-letter.
-QString textForSpeech(const QString& displayText)
+QString FreqDisplayGUI::textForSpeech(const QString& displayText)
 {
     QString s = displayText;
     // Order matters: longer unit strings must be replaced before shorter ones
@@ -69,9 +57,7 @@ QString textForSpeech(const QString& displayText)
     return s;
 }
 #endif
-} // anonymous namespace
 
-// --- FreqDisplayOverlay ---------------------------------------------------
 
 FreqDisplayOverlay::FreqDisplayOverlay(QWidget* parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool),

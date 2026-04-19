@@ -121,7 +121,23 @@ private:
 #ifdef QT_TEXTTOSPEECH_FOUND
     QTextToSpeech *m_speech = nullptr;
     QString m_pendingSpeechText; ///< Most recent text to speak once the engine is no longer busy
+    /// Expands display-text unit abbreviations to full spoken words so that TTS
+    /// engines read them naturally rather than letter-by-letter.
+    static QString textForSpeech(const QString& displayText);
 #endif
+
+    static constexpr const char* rxTxChannelKinds = "RT";
+    static constexpr int pollIntervalMs = 1000;
+    static constexpr int minimumFrequencyFontPointSize = 10;
+    /// Reference point size used when probing text metrics in updateFrequencyFont().
+    /// Large enough that integer rounding in QFontMetrics is negligible.
+    static constexpr int fontProbePointSize = 200;
+    static constexpr double kHzDivisor = 1e3;
+    static constexpr double MHzDivisor = 1e6;
+    static constexpr double GHzDivisor = 1e9;
+    static constexpr double dropShadowBlurRadius = 10.0;
+    static constexpr double dropShadowOffsetX = 2.0;
+    static constexpr double dropShadowOffsetY = 2.0;
 
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     ~FreqDisplayGUI() override;
