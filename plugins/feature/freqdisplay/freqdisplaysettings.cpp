@@ -16,6 +16,8 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.          //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <QColor>
+
 #include "util/simpleserializer.h"
 
 #include "freqdisplaysettings.h"
@@ -39,6 +41,7 @@ void FreqDisplaySettings::resetToDefaults()
     m_showUnits = true;
     m_freqDecimalPlaces = 3;
     m_powerDecimalPlaces = 1;
+    m_textColor = Qt::white;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -57,6 +60,7 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeBool(10, m_showUnits);
     s.writeS32(11, m_freqDecimalPlaces);
     s.writeS32(12, m_powerDecimalPlaces);
+    s.writeU32(13, m_textColor.rgba());
 
     return s.final();
 }
@@ -93,6 +97,9 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     d.readBool(10, &m_showUnits, true);
     d.readS32(11, &m_freqDecimalPlaces, 3);
     d.readS32(12, &m_powerDecimalPlaces, 1);
+    quint32 rgba = QColor(Qt::white).rgba();
+    d.readU32(13, &rgba, QColor(Qt::white).rgba());
+    m_textColor = QColor::fromRgba(rgba);
 
     return true;
 }
@@ -134,5 +141,8 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("powerDecimalPlaces")) {
         m_powerDecimalPlaces = settings.m_powerDecimalPlaces;
+    }
+    if (settingsKeys.contains("textColor")) {
+        m_textColor = settings.m_textColor;
     }
 }

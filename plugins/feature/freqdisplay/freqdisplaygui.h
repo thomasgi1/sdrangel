@@ -120,6 +120,8 @@ private:
     void updateFreqDecimalSpinbox();
     void applyTransparency();
     void applySpeech();
+    void applyTextColor();
+    void updateTextColorButton();
     QString formatFrequency(qint64 frequencyHz) const;
 
 private slots:
@@ -133,6 +135,7 @@ private slots:
     void on_showUnits_toggled(bool checked);
     void on_freqDecimalPlaces_valueChanged(int value);
     void on_powerDecimalPlaces_valueChanged(int value);
+    void on_textColor_clicked();
     void pollSelectedChannel();
     void onExitTransparentMode();
 #ifdef QT_TEXTTOSPEECH_FOUND

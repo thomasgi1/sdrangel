@@ -16,11 +16,14 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.          //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include <QColorDialog>
 #include <QContextMenuEvent>
 #include <QFont>
 #include <QLabel>
 #include <QLocale>
 #include <QMenu>
+#include <QPixmap>
+#include <QPushButton>
 #include <QResizeEvent>
 #include <QSpinBox>
 #include <QTimer>
@@ -76,7 +79,6 @@ FreqDisplayOverlay::FreqDisplayOverlay(QWidget* parent)
     m_label = new QLabel(this);
     m_label->setAlignment(Qt::AlignCenter);
     m_label->setWordWrap(true);
-    m_label->setStyleSheet("color: white;");
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -269,7 +271,9 @@ void FreqDisplayGUI::displaySettings()
     // Must come after frequencyUnits is set so the range/enabled state is correct
     updateFreqDecimalSpinbox();
 
+    updateTextColorButton();
     applyTransparency();
+    applyTextColor();
     applySpeech();
     updateChannelList();
 }
@@ -293,6 +297,7 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("showUnits");
     settingsKeys.append("freqDecimalPlaces");
     settingsKeys.append("powerDecimalPlaces");
+    settingsKeys.append("textColor");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -561,6 +566,7 @@ void FreqDisplayGUI::applyTransparency()
             // Position the overlay at the current screen position of FreqDisplayGUI.
             m_overlay->move(mapToGlobal(QPoint(0, 0)));
             m_overlay->resize(size());
+            applyTextColor();
             m_overlay->show();
         }
         hide();
@@ -579,6 +585,7 @@ void FreqDisplayGUI::applyTransparency()
             m_overlay = nullptr;
         }
         show();
+        applyTextColor();
         updateFrequencyFont();
     }
 }
@@ -592,6 +599,36 @@ void FreqDisplayGUI::applySpeech()
         connect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
     }
 #endif
+}
+
+void FreqDisplayGUI::applyTextColor()
+{
+    const QString styleSheet = QString("color: %1;").arg(m_settings.m_textColor.name());
+    if (m_overlay) {
+        m_overlay->label()->setStyleSheet(styleSheet);
+    } else {
+        ui->frequencyValue->setStyleSheet(styleSheet);
+    }
+}
+
+void FreqDisplayGUI::updateTextColorButton()
+{
+    QPixmap pm(16, 16);
+    pm.fill(m_settings.m_textColor);
+    ui->textColor->setIcon(pm);
+}
+
+void FreqDisplayGUI::on_textColor_clicked()
+{
+    const QColor color = QColorDialog::getColor(
+        m_settings.m_textColor, this, tr("Select text color"), QColorDialog::DontUseNativeDialog);
+    if (color.isValid())
+    {
+        m_settings.m_textColor = color;
+        updateTextColorButton();
+        applyTextColor();
+        applySettings();
+    }
 }
 
 void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)

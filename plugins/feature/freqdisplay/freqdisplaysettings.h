@@ -20,6 +20,7 @@
 #define INCLUDE_FEATURE_FREQDISPLAYSETTINGS_H_
 
 #include <QByteArray>
+#include <QColor>
 #include <QString>
 #include <QStringList>
 
@@ -50,6 +51,7 @@ struct FreqDisplaySettings
     bool m_showUnits;                //!< Whether to append unit labels to displayed values
     int m_freqDecimalPlaces;         //!< Decimal places for frequency value (max depends on units: kHz→3, MHz→6, GHz→9)
     int m_powerDecimalPlaces;        //!< Decimal places for power value (0–3)
+    QColor m_textColor;              //!< Color of the frequency / power text
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;
