@@ -9,7 +9,7 @@ FreqDisplaySettings::FreqDisplaySettings()
 
 void FreqDisplaySettings::resetToDefaults()
 {
-    m_title = "Frequency display";
+    m_title = "Frequency Display";
     m_selectedChannel.clear();
     m_workspaceIndex = -1;
     m_geometryBytes.clear();
@@ -59,7 +59,7 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
         return false;
     }
 
-    d.readString(1, &m_title, "Frequency display");
+    d.readString(1, &m_title, "Frequency Display");
     d.readString(2, &m_selectedChannel, "");
     d.readS32(3, &m_workspaceIndex, -1);
     d.readBlob(4, &m_geometryBytes);
