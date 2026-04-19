@@ -446,6 +446,8 @@ void FreqDisplayGUI::updateFrequencyFont()
         return;
     }
 
+    maxLineWidth += 5; // Add some space for a border
+
     const int heightPerLine = availableHeight / numLines;
     const int maxFromWidth  = fontProbePointSize * availableWidth  / maxLineWidth;
     const int maxFromHeight = fontProbePointSize * heightPerLine   / lineHeight;
