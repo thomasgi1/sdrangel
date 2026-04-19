@@ -142,6 +142,7 @@ void FreqDisplayGUI::displaySettings()
     ui->transparentBackground->blockSignals(false);
 
     applyTransparency();
+    applySpeech();
     updateChannelList();
 }
 
@@ -482,6 +483,17 @@ void FreqDisplayGUI::applyTransparency()
     }
 }
 
+void FreqDisplayGUI::applySpeech()
+{
+#ifdef QT_TEXTTOSPEECH_FOUND
+    if (m_settings.m_speechEnabled && !m_speech)
+    {
+        m_speech = new QTextToSpeech(this);
+        connect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
+    }
+#endif
+}
+
 void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
 {
     m_settings.m_displayMode = static_cast<FreqDisplaySettings::DisplayMode>(index);
@@ -492,13 +504,7 @@ void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
 void FreqDisplayGUI::on_speech_toggled(bool checked)
 {
     m_settings.m_speechEnabled = checked;
-#ifdef QT_TEXTTOSPEECH_FOUND
-    if (checked && !m_speech)
-    {
-        m_speech = new QTextToSpeech(this);
-        connect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
-    }
-#endif
+    applySpeech();
     applySettings();
 }
 

@@ -72,6 +72,7 @@ private:
     void updateFrequencyText();
     void updateFrequencyFont();
     void applyTransparency();
+    void applySpeech();
 
 private slots:
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
