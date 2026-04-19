@@ -17,6 +17,8 @@ void FreqDisplaySettings::resetToDefaults()
     m_transparentBackground = false;
     m_displayMode = Frequency;
     m_speechEnabled = false;
+    m_frequencyUnits = Hz;
+    m_showUnits = true;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -31,6 +33,8 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeBool(6, m_transparentBackground);
     s.writeS32(7, static_cast<int>(m_displayMode));
     s.writeBool(8, m_speechEnabled);
+    s.writeS32(9, static_cast<int>(m_frequencyUnits));
+    s.writeBool(10, m_showUnits);
 
     return s.final();
 }
@@ -61,6 +65,10 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     d.readS32(7, &displayMode, 0);
     m_displayMode = static_cast<DisplayMode>(displayMode);
     d.readBool(8, &m_speechEnabled, false);
+    int frequencyUnits = 0;
+    d.readS32(9, &frequencyUnits, 0);
+    m_frequencyUnits = static_cast<FrequencyUnits>(frequencyUnits);
+    d.readBool(10, &m_showUnits, true);
 
     return true;
 }
@@ -90,5 +98,11 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("speechEnabled")) {
         m_speechEnabled = settings.m_speechEnabled;
+    }
+    if (settingsKeys.contains("frequencyUnits")) {
+        m_frequencyUnits = settings.m_frequencyUnits;
+    }
+    if (settingsKeys.contains("showUnits")) {
+        m_showUnits = settings.m_showUnits;
     }
 }

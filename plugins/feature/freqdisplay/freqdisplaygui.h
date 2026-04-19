@@ -73,6 +73,7 @@ private:
     void updateFrequencyFont();
     void applyTransparency();
     void applySpeech();
+    QString formatFrequency(qint64 frequencyHz) const;
 
 private slots:
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
@@ -81,6 +82,8 @@ private slots:
     void on_speech_toggled(bool checked);
     void on_fontFamily_currentFontChanged(const QFont& font);
     void on_transparentBackground_toggled(bool checked);
+    void on_frequencyUnits_currentIndexChanged(int index);
+    void on_showUnits_toggled(bool checked);
     void pollSelectedChannel();
 #ifdef QT_TEXTTOSPEECH_FOUND
     void speechStateChanged(QTextToSpeech::State state);

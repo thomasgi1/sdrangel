@@ -9,8 +9,15 @@ struct FreqDisplaySettings
 {
     enum DisplayMode {
         Frequency = 0, //!< Show channel centre frequency
-        Power     = 1, //!< Show channel power in dBFS
+        Power     = 1, //!< Show channel power in dB
         Both      = 2  //!< Show frequency and power on two lines
+    };
+
+    enum FrequencyUnits {
+        Hz  = 0,
+        kHz = 1,
+        MHz = 2,
+        GHz = 3
     };
 
     QString m_title;
@@ -21,6 +28,8 @@ struct FreqDisplaySettings
     bool m_transparentBackground;
     DisplayMode m_displayMode;
     bool m_speechEnabled;
+    FrequencyUnits m_frequencyUnits; //!< Units to use when displaying frequency
+    bool m_showUnits;                //!< Whether to append unit labels to displayed values
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;

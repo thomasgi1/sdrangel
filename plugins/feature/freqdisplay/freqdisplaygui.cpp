@@ -98,6 +98,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     connect(ui->speech, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_speech_toggled);
     connect(ui->fontFamily, &QFontComboBox::currentFontChanged, this, &FreqDisplayGUI::on_fontFamily_currentFontChanged);
     connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
+    connect(ui->frequencyUnits, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_frequencyUnits_currentIndexChanged);
+    connect(ui->showUnits, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_showUnits_toggled);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
     m_pollTimer.start(pollIntervalMs);
 
@@ -141,6 +143,14 @@ void FreqDisplayGUI::displaySettings()
     ui->transparentBackground->setChecked(m_settings.m_transparentBackground);
     ui->transparentBackground->blockSignals(false);
 
+    ui->frequencyUnits->blockSignals(true);
+    ui->frequencyUnits->setCurrentIndex(static_cast<int>(m_settings.m_frequencyUnits));
+    ui->frequencyUnits->blockSignals(false);
+
+    ui->showUnits->blockSignals(true);
+    ui->showUnits->setChecked(m_settings.m_showUnits);
+    ui->showUnits->blockSignals(false);
+
     applyTransparency();
     applySpeech();
     updateChannelList();
@@ -161,6 +171,8 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("transparentBackground");
     settingsKeys.append("displayMode");
     settingsKeys.append("speechEnabled");
+    settingsKeys.append("frequencyUnits");
+    settingsKeys.append("showUnits");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -297,7 +309,7 @@ void FreqDisplayGUI::updateFrequencyText()
         }
 
         const qint64 absoluteFrequency = qRound64(centerFrequencyHz) + static_cast<qint64>(offsetHz);
-        freqText = tr("%1 Hz").arg(QLocale().toString(absoluteFrequency));
+        freqText = formatFrequency(absoluteFrequency);
     }
 
     // --- Power ---
@@ -307,11 +319,21 @@ void FreqDisplayGUI::updateFrequencyText()
         double power = 0.0;
         if (!ChannelWebAPIUtils::getChannelReportValue(selectedChannel.m_superIndex, selectedChannel.m_index, "channelPowerDB", power))
         {
-            setLabelText(tr("Power unavailable"));
-            updateFrequencyFont();
-            return;
+            if (mode == FreqDisplaySettings::Power)
+            {
+                // Power-only mode: nothing else to show
+                setLabelText(tr("Power unavailable"));
+                updateFrequencyFont();
+                return;
+            }
+            // Both mode: power unavailable but frequency is valid — show frequency only
         }
-        powerText = QString("%1 dBFS").arg(power, 0, 'f', 1);
+        else
+        {
+            powerText = m_settings.m_showUnits
+                ? QString("%1 dB").arg(power, 0, 'f', 1)
+                : QString("%1").arg(power, 0, 'f', 1);
+        }
     }
 
     // --- Compose display text ---
@@ -320,7 +342,8 @@ void FreqDisplayGUI::updateFrequencyText()
     } else if (mode == FreqDisplaySettings::Power) {
         setLabelText(powerText);
     } else {
-        setLabelText(freqText + "\n" + powerText);
+        // Both: show frequency alone when power is unavailable
+        setLabelText(powerText.isEmpty() ? freqText : freqText + "\n" + powerText);
     }
 
     updateFrequencyFont();
@@ -456,11 +479,10 @@ void FreqDisplayGUI::applyTransparency()
             const QPoint mdiPos = savedMdi->viewport()->mapFromGlobal(currentGlobalPos);
             // Defer re-embedding to the next event loop iteration.
             QTimer::singleShot(0, this, [this, savedMdi, mdiPos, savedMdiGeometry]() {
-                // Hide first to prevent a flash of the overlay appearing as an
-                // opaque window before it is re-embedded in the MDI area.
-                hide();
                 // Clear translucency before native-window recreation so the
-                // window is rebuilt as opaque.
+                // window is rebuilt as opaque.  Do this while the window is
+                // still visible: changing flags on a hidden window can deadlock
+                // on some platforms due to window-manager communication.
                 setAttribute(Qt::WA_TranslucentBackground, false);
                 // Remove the WindowStaysOnTopHint that was added when entering
                 // transparent mode; without this the re-embedded QMdiSubWindow
@@ -513,6 +535,47 @@ void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)
     m_settings.m_fontName = font.family();
     applySettings();
     updateFrequencyFont();
+}
+
+void FreqDisplayGUI::on_frequencyUnits_currentIndexChanged(int index)
+{
+    m_settings.m_frequencyUnits = static_cast<FreqDisplaySettings::FrequencyUnits>(index);
+    applySettings();
+    updateFrequencyText();
+}
+
+void FreqDisplayGUI::on_showUnits_toggled(bool checked)
+{
+    m_settings.m_showUnits = checked;
+    applySettings();
+    updateFrequencyText();
+}
+
+QString FreqDisplayGUI::formatFrequency(qint64 frequencyHz) const
+{
+    const QLocale locale;
+    const bool showUnits = m_settings.m_showUnits;
+
+    switch (m_settings.m_frequencyUnits)
+    {
+    case FreqDisplaySettings::kHz: {
+        const QString s = locale.toString(frequencyHz / 1e3, 'f', 3);
+        return showUnits ? s + tr(" kHz") : s;
+    }
+    case FreqDisplaySettings::MHz: {
+        const QString s = locale.toString(frequencyHz / 1e6, 'f', 6);
+        return showUnits ? s + tr(" MHz") : s;
+    }
+    case FreqDisplaySettings::GHz: {
+        const QString s = locale.toString(frequencyHz / 1e9, 'f', 9);
+        return showUnits ? s + tr(" GHz") : s;
+    }
+    case FreqDisplaySettings::Hz:
+    default: {
+        const QString s = locale.toString(frequencyHz);
+        return showUnits ? s + tr(" Hz") : s;
+    }
+    }
 }
 
 void FreqDisplayGUI::on_transparentBackground_toggled(bool checked)
