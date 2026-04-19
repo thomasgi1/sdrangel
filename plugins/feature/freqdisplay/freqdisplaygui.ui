@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>246</height>
+    <height>249</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -293,11 +293,11 @@ When in transparent mode:
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="displayContainer" native="true">
+  <widget class="QLabel" name="frequencyValue">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>110</y>
+     <y>120</y>
      <width>501</width>
      <height>91</height>
     </rect>
@@ -305,42 +305,15 @@ When in transparent mode:
    <property name="sizePolicy">
     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
      <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
+     <verstretch>1</verstretch>
     </sizepolicy>
    </property>
-   <property name="windowTitle">
-    <string>Display</string>
+   <property name="text">
+    <string>No channel selected</string>
    </property>
-   <layout class="QHBoxLayout" name="display">
-    <property name="leftMargin">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="rightMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
-     <number>0</number>
-    </property>
-    <item>
-     <widget class="QLabel" name="frequencyValue">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>1</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="text">
-       <string>No channel selected</string>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignmentFlag::AlignCenter</set>
-      </property>
-     </widget>
-    </item>
-   </layout>
+   <property name="alignment">
+    <set>Qt::AlignmentFlag::AlignCenter</set>
+   </property>
   </widget>
  </widget>
  <customwidgets>
