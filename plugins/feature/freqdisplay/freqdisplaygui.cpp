@@ -133,6 +133,14 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
 FreqDisplayGUI::~FreqDisplayGUI()
 {
+#ifdef QT_TEXTTOSPEECH_FOUND
+    if (m_speech)
+    {
+        disconnect(m_speech, &QTextToSpeech::stateChanged, this, &FreqDisplayGUI::speechStateChanged);
+        delete m_speech;
+        m_speech = nullptr;
+    }
+#endif
     delete ui;
 }
 
