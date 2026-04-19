@@ -569,7 +569,13 @@ void FreqDisplayGUI::applyTransparency()
     {
         if (m_overlay)
         {
-            delete m_overlay;
+            // Hide immediately so the overlay disappears at once, then schedule
+            // deletion for after the current event-loop iteration.  Plain delete
+            // would crash here because onExitTransparentMode() is invoked via a
+            // signal emitted from inside the overlay's contextMenuEvent(), which
+            // is still on the call stack when we reach this point.
+            m_overlay->hide();
+            m_overlay->deleteLater();
             m_overlay = nullptr;
         }
         show();
