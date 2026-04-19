@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>520</width>
-    <height>220</height>
+    <height>246</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -25,7 +25,7 @@
      <x>0</x>
      <y>0</y>
      <width>520</width>
-     <height>75</height>
+     <height>91</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -99,7 +99,7 @@
         </item>
         <item>
          <property name="text">
-          <string>Both</string>
+          <string>Frequency &amp; Power</string>
          </property>
         </item>
        </widget>
@@ -107,7 +107,11 @@
       <item>
        <widget class="ButtonSwitch" name="transparentBackground">
         <property name="toolTip">
-         <string>Toggle transparent background for the display area</string>
+         <string>Click to display frequency / power on transparent background.
+
+When in transparent mode:
+- Left click on text to drag.
+- Right click on the text to exit transparent mode.</string>
         </property>
         <property name="text">
          <string>T</string>
@@ -230,6 +234,23 @@
        </widget>
       </item>
       <item>
+       <spacer name="unitsSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="fontLayout">
+      <item>
        <widget class="QLabel" name="fontLabel">
         <property name="text">
          <string>Font</string>
@@ -249,30 +270,17 @@
         </property>
        </widget>
       </item>
-      <item>
-       <spacer name="unitsSpacer">
-        <property name="orientation">
-         <enum>Qt::Orientation::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
      </layout>
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="horizontalWidget" native="true">
+  <widget class="QWidget" name="displayContainer" native="true">
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>90</y>
+     <y>110</y>
      <width>501</width>
-     <height>111</height>
+     <height>91</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -282,6 +290,18 @@
     </sizepolicy>
    </property>
    <layout class="QHBoxLayout" name="display">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QLabel" name="frequencyValue">
       <property name="sizePolicy">
