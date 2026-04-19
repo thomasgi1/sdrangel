@@ -577,6 +577,12 @@ void FreqDisplayGUI::updateFrequencyFont()
     label->setFont(font);
 }
 
+void FreqDisplayGUI::showEvent(QShowEvent* event)
+{
+    FeatureGUI::showEvent(event);
+    applyTransparency();
+}
+
 void FreqDisplayGUI::applyTransparency()
 {
     if (m_settings.m_transparentBackground)
