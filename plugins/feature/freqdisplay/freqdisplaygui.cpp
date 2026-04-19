@@ -20,6 +20,23 @@ constexpr int minimumFrequencyFontPointSize = 10;
 // Reference point size used when probing text metrics in updateFrequencyFont().
 // Large enough that integer rounding in QFontMetrics is negligible.
 constexpr int fontProbePointSize = 200;
+
+#ifdef QT_TEXTTOSPEECH_FOUND
+// Expand display-text unit abbreviations to full spoken words so that TTS
+// engines read them naturally rather than letter-by-letter.
+QString textForSpeech(const QString& displayText)
+{
+    QString s = displayText;
+    // Order matters: longer unit strings must be replaced before shorter ones
+    // that are sub-strings of them (e.g. "GHz" before "Hz").
+    s.replace(QLatin1String(" GHz"), QLatin1String(" gigahertz"));
+    s.replace(QLatin1String(" MHz"), QLatin1String(" megahertz"));
+    s.replace(QLatin1String(" kHz"), QLatin1String(" kilohertz"));
+    s.replace(QLatin1String(" Hz"),  QLatin1String(" hertz"));
+    s.replace(QLatin1String(" dB"),  QLatin1String(" decibels"));
+    return s;
+}
+#endif
 }
 
 FreqDisplayGUI* FreqDisplayGUI::create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature)
@@ -253,16 +270,17 @@ void FreqDisplayGUI::updateFrequencyText()
 #ifdef QT_TEXTTOSPEECH_FOUND
         if (m_settings.m_speechEnabled && m_speech && (text != m_previousDisplayText))
         {
+            const QString speechText = textForSpeech(text);
             if (m_speech->state() == QTextToSpeech::Speaking)
             {
                 // Engine is busy — save the latest text so the stateChanged
                 // slot can say it once the current utterance finishes.
-                m_pendingSpeechText = text;
+                m_pendingSpeechText = speechText;
             }
             else
             {
                 m_pendingSpeechText.clear();
-                m_speech->say(text);
+                m_speech->say(speechText);
             }
         }
 #endif
@@ -479,16 +497,18 @@ void FreqDisplayGUI::applyTransparency()
             const QPoint mdiPos = savedMdi->viewport()->mapFromGlobal(currentGlobalPos);
             // Defer re-embedding to the next event loop iteration.
             QTimer::singleShot(0, this, [this, savedMdi, mdiPos, savedMdiGeometry]() {
-                // Clear translucency before native-window recreation so the
-                // window is rebuilt as opaque.  Do this while the window is
-                // still visible: changing flags on a hidden window can deadlock
-                // on some platforms due to window-manager communication.
-                setAttribute(Qt::WA_TranslucentBackground, false);
-                // Remove the WindowStaysOnTopHint that was added when entering
-                // transparent mode; without this the re-embedded QMdiSubWindow
-                // retains the hint and the title bar / border do not reappear.
-                setWindowFlag(Qt::WindowStaysOnTopHint, false);
+                // Re-embed in the MDI area first. QMdiArea::addSubWindow()
+                // reparents this QMdiSubWindow into the MDI viewport using an
+                // XReparentWindow operation, which does not require any
+                // window-manager round-trips.  Only AFTER the widget is a child
+                // (non-top-level) is it safe to clear WA_TranslucentBackground
+                // and WindowStaysOnTopHint: clearing those flags on a visible
+                // top-level window forces native window destruction + recreation
+                // plus WM state-change negotiation, which can deadlock on some
+                // compositors.
                 savedMdi->addSubWindow(this);
+                setAttribute(Qt::WA_TranslucentBackground, false);
+                setWindowFlag(Qt::WindowStaysOnTopHint, false);
                 show();
                 move(mdiPos);
                 resize(savedMdiGeometry.size());
