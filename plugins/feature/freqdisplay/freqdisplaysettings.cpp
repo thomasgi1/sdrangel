@@ -19,10 +19,12 @@
 #include <QColor>
 
 #include "util/simpleserializer.h"
+#include "settings/serializable.h"
 
 #include "freqdisplaysettings.h"
 
-FreqDisplaySettings::FreqDisplaySettings()
+FreqDisplaySettings::FreqDisplaySettings() :
+    m_rollupState(nullptr)
 {
     resetToDefaults();
 }
@@ -61,6 +63,9 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeS32(11, m_freqDecimalPlaces);
     s.writeS32(12, m_powerDecimalPlaces);
     s.writeU32(13, m_textColor.rgba());
+    if (m_rollupState) {
+        s.writeBlob(14, m_rollupState->serialize());
+    }
 
     return s.final();
 }
@@ -68,6 +73,7 @@ QByteArray FreqDisplaySettings::serialize() const
 bool FreqDisplaySettings::deserialize(const QByteArray& data)
 {
     SimpleDeserializer d(data);
+    QByteArray bytetmp;
 
     if (!d.isValid())
     {
@@ -100,6 +106,11 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     quint32 rgba = QColor(Qt::white).rgba();
     d.readU32(13, &rgba, QColor(Qt::white).rgba());
     m_textColor = QColor::fromRgba(rgba);
+    if (m_rollupState)
+    {
+        d.readBlob(14, &bytetmp);
+        m_rollupState->deserialize(bytetmp);
+    }
 
     return true;
 }

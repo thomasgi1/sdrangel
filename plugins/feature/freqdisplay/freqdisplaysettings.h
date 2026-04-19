@@ -24,6 +24,8 @@
 #include <QString>
 #include <QStringList>
 
+class Serializable;
+
 struct FreqDisplaySettings
 {
     enum DisplayMode {
@@ -52,6 +54,7 @@ struct FreqDisplaySettings
     int m_freqDecimalPlaces;         //!< Decimal places for frequency value (max depends on units: kHz→3, MHz→6, GHz→9)
     int m_powerDecimalPlaces;        //!< Decimal places for power value (0–3)
     QColor m_textColor;              //!< Color of the frequency / power text
+    Serializable *m_rollupState;
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;
@@ -59,6 +62,7 @@ struct FreqDisplaySettings
     void resetToDefaults();
     QByteArray serialize() const;
     bool deserialize(const QByteArray& data);
+    void setRollupState(Serializable *rollupState) { m_rollupState = rollupState; }
     void applySettings(const QStringList& settingsKeys, const FreqDisplaySettings& settings);
 };
 

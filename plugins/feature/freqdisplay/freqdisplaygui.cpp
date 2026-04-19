@@ -165,6 +165,17 @@ bool FreqDisplayGUI::deserialize(const QByteArray& data)
     return false;
 }
 
+void FreqDisplayGUI::onWidgetRolled(QWidget* widget, bool rollDown)
+{
+    (void) widget;
+    (void) rollDown;
+
+    RollupContents *rollupContents = getRollupContents();
+
+    rollupContents->saveState(m_rollupState);
+    applySettings();
+}
+
 FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent) :
     FeatureGUI(parent),
     ui(new Ui::FreqDisplayGUI),
@@ -178,9 +189,13 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     m_feature = feature;
     setAttribute(Qt::WA_DeleteOnClose, true);
-
+    m_helpURL = "plugins/feature/freqdisplay/readme.md";
     RollupContents *rollupContents = getRollupContents();
     ui->setupUi(rollupContents);
+    rollupContents->arrangeRollups();
+    connect(rollupContents, SIGNAL(widgetRolled(QWidget*,bool)), this, SLOT(onWidgetRolled(QWidget*,bool)));
+    sizeToContents();
+
     ui->frequencyValue->setWordWrap(true);
 
     m_freqDisplay->setMessageQueueToGUI(&m_inputMessageQueue);
@@ -210,6 +225,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 #ifndef QT_TEXTTOSPEECH_FOUND
     ui->speech->setVisible(false);
 #endif
+
+    m_settings.setRollupState(&m_rollupState);
 
     displaySettings();
     updateFrequencyText();
@@ -280,6 +297,9 @@ void FreqDisplayGUI::displaySettings()
     applyTextColor();
     applySpeech();
     updateChannelList();
+
+    getRollupContents()->restoreState(m_rollupState);
+    getRollupContents()->arrangeRollups();
 }
 
 void FreqDisplayGUI::applySettings(bool force)

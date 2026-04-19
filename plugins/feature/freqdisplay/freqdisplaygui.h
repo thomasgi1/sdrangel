@@ -31,6 +31,7 @@
 #include "availablechannelorfeaturehandler.h"
 #include "feature/featuregui.h"
 #include "util/messagequeue.h"
+#include "settings/rollupstate.h"
 
 #include "freqdisplaysettings.h"
 
@@ -96,6 +97,7 @@ private:
     Ui::FreqDisplayGUI* ui;
     FreqDisplay* m_freqDisplay;
     FreqDisplaySettings m_settings;
+    RollupState m_rollupState;
     MessageQueue m_inputMessageQueue;
     AvailableChannelOrFeatureHandler m_availableChannelOrFeatureHandler;
     AvailableChannelOrFeatureList m_availableChannels;
@@ -126,6 +128,7 @@ private:
 
 private slots:
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
+    void onWidgetRolled(QWidget* widget, bool rollDown);
     void on_channels_currentIndexChanged(int index);
     void on_displayMode_currentIndexChanged(int index);
     void on_speech_toggled(bool checked);
