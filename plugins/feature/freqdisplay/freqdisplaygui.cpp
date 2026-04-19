@@ -413,6 +413,11 @@ void FreqDisplayGUI::applyTransparency()
 
         rollupContents->setTransparentBackground(true);
         ui->settingsContainer->setAutoFillBackground(true);
+        // Hide the controls bar so only frequencyValue fills the window.
+        // RollupContents::arrangeRollups() is triggered automatically by the
+        // Hide event and will reposition/resize horizontalWidget to use all
+        // available space.
+        ui->settingsContainer->hide();
     }
     else
     {
@@ -444,6 +449,8 @@ void FreqDisplayGUI::applyTransparency()
         ui->settingsContainer->setStyleSheet(QString());
         ui->horizontalWidget->setStyleSheet(QString());
         ui->frequencyValue->setStyleSheet(QString());
+        // Restore the controls bar that was hidden while in transparent mode.
+        ui->settingsContainer->show();
     }
 }
 
