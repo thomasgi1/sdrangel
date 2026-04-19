@@ -44,6 +44,8 @@ void FreqDisplaySettings::resetToDefaults()
     m_freqDecimalPlaces = 3;
     m_powerDecimalPlaces = 1;
     m_textColor = Qt::white;
+    m_dropShadowEnabled = false;
+    m_dropShadowColor = Qt::black;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -63,6 +65,8 @@ QByteArray FreqDisplaySettings::serialize() const
     s.writeS32(11, m_freqDecimalPlaces);
     s.writeS32(12, m_powerDecimalPlaces);
     s.writeU32(13, m_textColor.rgba());
+    s.writeBool(15, m_dropShadowEnabled);
+    s.writeU32(16, m_dropShadowColor.rgba());
     if (m_rollupState) {
         s.writeBlob(14, m_rollupState->serialize());
     }
@@ -106,6 +110,10 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
     quint32 rgba = QColor(Qt::white).rgba();
     d.readU32(13, &rgba, QColor(Qt::white).rgba());
     m_textColor = QColor::fromRgba(rgba);
+    d.readBool(15, &m_dropShadowEnabled, false);
+    quint32 shadowRgba = QColor(Qt::black).rgba();
+    d.readU32(16, &shadowRgba, QColor(Qt::black).rgba());
+    m_dropShadowColor = QColor::fromRgba(shadowRgba);
     if (m_rollupState)
     {
         d.readBlob(14, &bytetmp);
@@ -155,5 +163,11 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("textColor")) {
         m_textColor = settings.m_textColor;
+    }
+    if (settingsKeys.contains("dropShadowEnabled")) {
+        m_dropShadowEnabled = settings.m_dropShadowEnabled;
+    }
+    if (settingsKeys.contains("dropShadowColor")) {
+        m_dropShadowColor = settings.m_dropShadowColor;
     }
 }

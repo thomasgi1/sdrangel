@@ -54,6 +54,8 @@ struct FreqDisplaySettings
     int m_freqDecimalPlaces;         //!< Decimal places for frequency value (max depends on units: kHz→3, MHz→6, GHz→9)
     int m_powerDecimalPlaces;        //!< Decimal places for power value (0–3)
     QColor m_textColor;              //!< Color of the frequency / power text
+    bool m_dropShadowEnabled;        //!< Whether a drop shadow is applied to the frequency / power text
+    QColor m_dropShadowColor;        //!< Color of the drop shadow
     Serializable *m_rollupState;
 
     FreqDisplaySettings();

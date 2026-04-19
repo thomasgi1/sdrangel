@@ -19,6 +19,7 @@
 #include <QColorDialog>
 #include <QContextMenuEvent>
 #include <QFont>
+#include <QGraphicsDropShadowEffect>
 #include <QLabel>
 #include <QLocale>
 #include <QMenu>
@@ -48,6 +49,9 @@ constexpr int fontProbePointSize = 200;
 constexpr double kHzDivisor = 1e3;
 constexpr double MHzDivisor = 1e6;
 constexpr double GHzDivisor = 1e9;
+constexpr double dropShadowBlurRadius = 10.0;
+constexpr double dropShadowOffsetX = 2.0;
+constexpr double dropShadowOffsetY = 2.0;
 
 #ifdef QT_TEXTTOSPEECH_FOUND
 // Expand display-text unit abbreviations to full spoken words so that TTS
@@ -219,6 +223,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     connect(ui->freqDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_freqDecimalPlaces_valueChanged);
     connect(ui->powerDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_powerDecimalPlaces_valueChanged);
     connect(ui->textColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_textColor_clicked);
+    connect(ui->dropShadow, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_dropShadow_toggled);
+    connect(ui->dropShadowColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_dropShadowColor_clicked);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
     m_pollTimer.start(pollIntervalMs);
 
@@ -293,6 +299,12 @@ void FreqDisplayGUI::displaySettings()
     updateFreqDecimalSpinbox();
 
     updateTextColorButton();
+    updateDropShadowColorButton();
+
+    ui->dropShadow->blockSignals(true);
+    ui->dropShadow->setChecked(m_settings.m_dropShadowEnabled);
+    ui->dropShadow->blockSignals(false);
+
     applyTransparency();
     applyTextColor();
     applySpeech();
@@ -322,6 +334,8 @@ void FreqDisplayGUI::applySettings(bool force)
     settingsKeys.append("freqDecimalPlaces");
     settingsKeys.append("powerDecimalPlaces");
     settingsKeys.append("textColor");
+    settingsKeys.append("dropShadowEnabled");
+    settingsKeys.append("dropShadowColor");
     m_freqDisplay->applySettings(m_settings, settingsKeys, force);
 }
 
@@ -603,6 +617,7 @@ void FreqDisplayGUI::applyTransparency()
             m_overlay->move(ui->frequencyValue->mapToGlobal(QPoint(0, 0)));
             m_overlay->resize(ui->frequencyValue->size());
             applyTextColor();
+            applyDropShadow();
             m_overlay->show();
         }
         hide();
@@ -622,6 +637,7 @@ void FreqDisplayGUI::applyTransparency()
         }
         show();
         applyTextColor();
+        applyDropShadow();
         updateFrequencyFont();
     }
 }
@@ -662,6 +678,31 @@ void FreqDisplayGUI::updateTextColorButton()
     ui->textColor->setIcon(pm);
 }
 
+void FreqDisplayGUI::updateDropShadowColorButton()
+{
+    QPixmap pm(16, 16);
+    pm.fill(m_settings.m_dropShadowColor);
+    ui->dropShadowColor->setIcon(pm);
+}
+
+void FreqDisplayGUI::applyDropShadow()
+{
+    QWidget* target = m_overlay ? static_cast<QWidget*>(m_overlay->label())
+                                : ui->frequencyValue;
+    if (m_settings.m_dropShadowEnabled)
+    {
+        auto* effect = new QGraphicsDropShadowEffect(target);
+        effect->setColor(m_settings.m_dropShadowColor);
+        effect->setBlurRadius(dropShadowBlurRadius);
+        effect->setOffset(dropShadowOffsetX, dropShadowOffsetY);
+        target->setGraphicsEffect(effect);
+    }
+    else
+    {
+        target->setGraphicsEffect(nullptr);
+    }
+}
+
 void FreqDisplayGUI::on_textColor_clicked()
 {
     const QColor color = QColorDialog::getColor(
@@ -671,6 +712,26 @@ void FreqDisplayGUI::on_textColor_clicked()
         m_settings.m_textColor = color;
         updateTextColorButton();
         applyTextColor();
+        applySettings();
+    }
+}
+
+void FreqDisplayGUI::on_dropShadow_toggled(bool checked)
+{
+    m_settings.m_dropShadowEnabled = checked;
+    applyDropShadow();
+    applySettings();
+}
+
+void FreqDisplayGUI::on_dropShadowColor_clicked()
+{
+    const QColor color = QColorDialog::getColor(
+        m_settings.m_dropShadowColor, this, tr("Select drop shadow color"), QColorDialog::DontUseNativeDialog);
+    if (color.isValid())
+    {
+        m_settings.m_dropShadowColor = color;
+        updateDropShadowColorButton();
+        applyDropShadow();
         applySettings();
     }
 }

@@ -289,6 +289,32 @@ When in transparent mode:
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="ButtonSwitch" name="dropShadow">
+        <property name="toolTip">
+         <string>Enable drop shadow effect on the frequency / power text</string>
+        </property>
+        <property name="text">
+         <string>DS</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="dropShadowColor">
+        <property name="maximumSize">
+         <size>
+          <width>24</width>
+          <height>24</height>
+         </size>
+        </property>
+        <property name="toolTip">
+         <string>Select color for the drop shadow</string>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
    </layout>
