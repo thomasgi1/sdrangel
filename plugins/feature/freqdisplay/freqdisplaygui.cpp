@@ -78,7 +78,7 @@ FreqDisplayOverlay::FreqDisplayOverlay(QWidget* parent)
 
     m_label = new QLabel(this);
     m_label->setAlignment(Qt::AlignCenter);
-    m_label->setWordWrap(true);
+    m_label->setWordWrap(false);
 
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -196,7 +196,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     connect(rollupContents, SIGNAL(widgetRolled(QWidget*,bool)), this, SLOT(onWidgetRolled(QWidget*,bool)));
     sizeToContents();
 
-    ui->frequencyValue->setWordWrap(true);
+    ui->frequencyValue->setWordWrap(false); // If true, RollupContents::arrangeRollups uses heightForWidth rather than minimumSizeHint
 
     m_freqDisplay->setMessageQueueToGUI(&m_inputMessageQueue);
     m_settings = m_freqDisplay->getSettings();
