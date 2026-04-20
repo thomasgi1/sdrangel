@@ -66,3 +66,11 @@ Select the font used to display frequency and power values.
 <h3>10: Font Colour</h3>
 
 Select the colour for the font used to display frequency and power values.
+
+<h3>11: DS - Drop Shadow</h3>
+
+Check to enable a drop shadow behind the frequency and power text, which can improve readability against complex backgrounds when in transparent mode.
+
+<h3>12: Drop Shadow Colour</h3>
+
+Select the colour for the drop shadow used behind the frequency and power text.
