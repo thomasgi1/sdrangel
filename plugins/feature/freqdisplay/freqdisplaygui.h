@@ -109,6 +109,7 @@ private:
     Ui::FreqDisplayGUI* ui;
     FreqDisplay* m_freqDisplay;
     FreqDisplaySettings m_settings;
+    QStringList m_settingsKeys;
     RollupState m_rollupState;
     MessageQueue m_inputMessageQueue;
     AvailableChannelOrFeatureHandler m_availableChannelOrFeatureHandler;
@@ -143,7 +144,9 @@ private:
     ~FreqDisplayGUI() override;
 
     void displaySettings();
-    void applySettings(bool force = false);
+    void applySetting(const QString& settingsKey);
+    void applySettings(const QStringList& settingsKeys, bool force = false);
+    void applyAllSettings();
     void updateChannelList();
     void updateFrequencyText();
     void updateFrequencyFont();
@@ -157,8 +160,9 @@ private:
     QString formatFrequency(qint64 frequencyHz) const;
 
 private slots:
-    void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
+    void onMenuDialogCalled(const QPoint &p);
     void onWidgetRolled(QWidget* widget, bool rollDown);
+    void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
     void on_channels_currentIndexChanged(int index);
     void on_displayMode_currentIndexChanged(int index);
     void on_speech_toggled(bool checked);

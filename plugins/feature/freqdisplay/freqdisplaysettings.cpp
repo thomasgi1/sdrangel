@@ -46,6 +46,12 @@ void FreqDisplaySettings::resetToDefaults()
     m_textColor = Qt::white;
     m_dropShadowEnabled = false;
     m_dropShadowColor = Qt::black;
+    m_rgbColor = QColor(126, 132, 247).rgb();
+    m_useReverseAPI = false;
+    m_reverseAPIAddress = "127.0.0.1";
+    m_reverseAPIPort = 8888;
+    m_reverseAPIFeatureSetIndex = 0;
+    m_reverseAPIFeatureIndex = 0;
 }
 
 QByteArray FreqDisplaySettings::serialize() const
@@ -70,6 +76,12 @@ QByteArray FreqDisplaySettings::serialize() const
     if (m_rollupState) {
         s.writeBlob(14, m_rollupState->serialize());
     }
+    s.writeU32(17, m_rgbColor);
+    s.writeBool(18, m_useReverseAPI);
+    s.writeString(19, m_reverseAPIAddress);
+    s.writeU32(20, m_reverseAPIPort);
+    s.writeU32(21, m_reverseAPIFeatureSetIndex);
+    s.writeU32(22, m_reverseAPIFeatureIndex);
 
     return s.final();
 }
@@ -78,6 +90,7 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
 {
     SimpleDeserializer d(data);
     QByteArray bytetmp;
+    uint32_t utmp;
 
     if (!d.isValid())
     {
@@ -85,42 +98,59 @@ bool FreqDisplaySettings::deserialize(const QByteArray& data)
         return false;
     }
 
-    if (d.getVersion() != 1)
+    if (d.getVersion() == 1)
+    {
+        d.readString(1, &m_title, "Frequency Display");
+        d.readString(2, &m_selectedChannel, "");
+        d.readS32(3, &m_workspaceIndex, -1);
+        d.readBlob(4, &m_geometryBytes);
+        d.readString(5, &m_fontName, "");
+        d.readBool(6, &m_transparentBackground, false);
+        int displayMode = 0;
+        d.readS32(7, &displayMode, 0);
+        m_displayMode = static_cast<DisplayMode>(displayMode);
+        d.readBool(8, &m_speechEnabled, false);
+        int frequencyUnits = 0;
+        d.readS32(9, &frequencyUnits, 0);
+        m_frequencyUnits = static_cast<FrequencyUnits>(frequencyUnits);
+        d.readBool(10, &m_showUnits, true);
+        d.readS32(11, &m_freqDecimalPlaces, 3);
+        d.readS32(12, &m_powerDecimalPlaces, 1);
+        quint32 rgba = QColor(Qt::white).rgba();
+        d.readU32(13, &rgba, QColor(Qt::white).rgba());
+        m_textColor = QColor::fromRgba(rgba);
+        d.readBool(15, &m_dropShadowEnabled, false);
+        quint32 shadowRgba = QColor(Qt::black).rgba();
+        d.readU32(16, &shadowRgba, QColor(Qt::black).rgba());
+        m_dropShadowColor = QColor::fromRgba(shadowRgba);
+        if (m_rollupState)
+        {
+            d.readBlob(14, &bytetmp);
+            m_rollupState->deserialize(bytetmp);
+        }
+        d.readU32(17, &m_rgbColor, QColor(126, 132, 247).rgb());
+        d.readBool(18, &m_useReverseAPI, false);
+        d.readString(19, &m_reverseAPIAddress, "127.0.0.1");
+        d.readU32(20, &utmp, 0);
+
+        if ((utmp > 1023) && (utmp < 65535)) {
+            m_reverseAPIPort = utmp;
+        } else {
+            m_reverseAPIPort = 8888;
+        }
+
+        d.readU32(21, &utmp, 0);
+        m_reverseAPIFeatureSetIndex = utmp > 99 ? 99 : utmp;
+        d.readU32(22, &utmp, 0);
+        m_reverseAPIFeatureIndex = utmp > 99 ? 99 : utmp;
+
+        return true;
+    }
+    else
     {
         resetToDefaults();
         return false;
     }
-
-    d.readString(1, &m_title, "Frequency Display");
-    d.readString(2, &m_selectedChannel, "");
-    d.readS32(3, &m_workspaceIndex, -1);
-    d.readBlob(4, &m_geometryBytes);
-    d.readString(5, &m_fontName, "");
-    d.readBool(6, &m_transparentBackground, false);
-    int displayMode = 0;
-    d.readS32(7, &displayMode, 0);
-    m_displayMode = static_cast<DisplayMode>(displayMode);
-    d.readBool(8, &m_speechEnabled, false);
-    int frequencyUnits = 0;
-    d.readS32(9, &frequencyUnits, 0);
-    m_frequencyUnits = static_cast<FrequencyUnits>(frequencyUnits);
-    d.readBool(10, &m_showUnits, true);
-    d.readS32(11, &m_freqDecimalPlaces, 3);
-    d.readS32(12, &m_powerDecimalPlaces, 1);
-    quint32 rgba = QColor(Qt::white).rgba();
-    d.readU32(13, &rgba, QColor(Qt::white).rgba());
-    m_textColor = QColor::fromRgba(rgba);
-    d.readBool(15, &m_dropShadowEnabled, false);
-    quint32 shadowRgba = QColor(Qt::black).rgba();
-    d.readU32(16, &shadowRgba, QColor(Qt::black).rgba());
-    m_dropShadowColor = QColor::fromRgba(shadowRgba);
-    if (m_rollupState)
-    {
-        d.readBlob(14, &bytetmp);
-        m_rollupState->deserialize(bytetmp);
-    }
-
-    return true;
 }
 
 void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const FreqDisplaySettings& settings)
@@ -169,5 +199,23 @@ void FreqDisplaySettings::applySettings(const QStringList& settingsKeys, const F
     }
     if (settingsKeys.contains("dropShadowColor")) {
         m_dropShadowColor = settings.m_dropShadowColor;
+    }
+    if (settingsKeys.contains("rgbColor")) {
+        m_rgbColor = settings.m_rgbColor;
+    }
+    if (settingsKeys.contains("useReverseAPI")) {
+        m_useReverseAPI = settings.m_useReverseAPI;
+    }
+    if (settingsKeys.contains("reverseAPIAddress")) {
+        m_reverseAPIAddress = settings.m_reverseAPIAddress;
+    }
+    if (settingsKeys.contains("reverseAPIPort")) {
+        m_reverseAPIPort = settings.m_reverseAPIPort;
+    }
+    if (settingsKeys.contains("reverseAPIFeatureSetIndex")) {
+        m_reverseAPIFeatureSetIndex = settings.m_reverseAPIFeatureSetIndex;
+    }
+    if (settingsKeys.contains("reverseAPIFeatureIndex")) {
+        m_reverseAPIFeatureIndex = settings.m_reverseAPIFeatureIndex;
     }
 }

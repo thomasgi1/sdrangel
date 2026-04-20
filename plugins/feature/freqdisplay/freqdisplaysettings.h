@@ -57,6 +57,12 @@ struct FreqDisplaySettings
     bool m_dropShadowEnabled;        //!< Whether a drop shadow is applied to the frequency / power text
     QColor m_dropShadowColor;        //!< Color of the drop shadow
     Serializable *m_rollupState;
+    quint32 m_rgbColor;
+    bool m_useReverseAPI;
+    QString m_reverseAPIAddress;
+    uint16_t m_reverseAPIPort;
+    uint16_t m_reverseAPIFeatureSetIndex;
+    uint16_t m_reverseAPIFeatureIndex;
 
     FreqDisplaySettings();
     ~FreqDisplaySettings() = default;

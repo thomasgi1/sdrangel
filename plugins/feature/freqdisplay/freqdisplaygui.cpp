@@ -32,7 +32,8 @@
 
 #include "channel/channelwebapiutils.h"
 #include "gui/buttonswitch.h"
-
+#include "gui/basicfeaturesettingsdialog.h"
+#include "gui/dialogpositioner.h"
 #include "feature/featureuiset.h"
 
 #include "ui_freqdisplaygui.h"
@@ -40,24 +41,6 @@
 #include "freqdisplaygui.h"
 
 // --- FreqDisplayOverlay ---------------------------------------------------
-
-#ifdef QT_TEXTTOSPEECH_FOUND
-// Expand display-text unit abbreviations to full spoken words so that TTS
-// engines read them naturally rather than letter-by-letter.
-QString FreqDisplayGUI::textForSpeech(const QString& displayText)
-{
-    QString s = displayText;
-    // Order matters: longer unit strings must be replaced before shorter ones
-    // that are sub-strings of them (e.g. "GHz" before "Hz").
-    s.replace(QLatin1String(" GHz"), QLatin1String(" gigahertz"));
-    s.replace(QLatin1String(" MHz"), QLatin1String(" megahertz"));
-    s.replace(QLatin1String(" kHz"), QLatin1String(" kilohertz"));
-    s.replace(QLatin1String(" Hz"),  QLatin1String(" hertz"));
-    s.replace(QLatin1String(" dB"),  QLatin1String(" decibels"));
-    return s;
-}
-#endif
-
 
 FreqDisplayOverlay::FreqDisplayOverlay(QWidget* parent)
     : QWidget(parent, Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool),
@@ -131,7 +114,7 @@ void FreqDisplayGUI::resetToDefaults()
 {
     m_settings.resetToDefaults();
     displaySettings();
-    applySettings(true);
+    applyAllSettings();
     updateFrequencyText();
 }
 
@@ -146,7 +129,7 @@ bool FreqDisplayGUI::deserialize(const QByteArray& data)
     {
         m_feature->setWorkspaceIndex(m_settings.m_workspaceIndex);
         displaySettings();
-        applySettings(true);
+        applyAllSettings();
         updateFrequencyText();
         return true;
     }
@@ -163,7 +146,7 @@ void FreqDisplayGUI::onWidgetRolled(QWidget* widget, bool rollDown)
     RollupContents *rollupContents = getRollupContents();
 
     rollupContents->saveState(m_rollupState);
-    applySettings();
+    applySetting("rollupState");
 }
 
 FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent) :
@@ -185,6 +168,8 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     rollupContents->arrangeRollups();
     connect(rollupContents, SIGNAL(widgetRolled(QWidget*,bool)), this, SLOT(onWidgetRolled(QWidget*,bool)));
     sizeToContents();
+
+    connect(this, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(onMenuDialogCalled(const QPoint &)));
 
     ui->frequencyValue->setWordWrap(false); // If true, RollupContents::arrangeRollups uses heightForWidth rather than minimumSizeHint
 
@@ -247,6 +232,7 @@ void FreqDisplayGUI::setWorkspaceIndex(int index)
 
 void FreqDisplayGUI::displaySettings()
 {
+    setTitleColor(m_settings.m_rgbColor);
     setWindowTitle(m_settings.m_title);
     setTitle(m_settings.m_title);
 
@@ -300,29 +286,65 @@ void FreqDisplayGUI::displaySettings()
     getRollupContents()->arrangeRollups();
 }
 
-void FreqDisplayGUI::applySettings(bool force)
+void FreqDisplayGUI::onMenuDialogCalled(const QPoint &p)
 {
-    if (!m_doApplySettings) {
-        return;
+    if (m_contextMenuType == ContextMenuType::ContextMenuChannelSettings)
+    {
+        BasicFeatureSettingsDialog dialog(this);
+        dialog.setTitle(m_settings.m_title);
+        dialog.setUseReverseAPI(m_settings.m_useReverseAPI);
+        dialog.setReverseAPIAddress(m_settings.m_reverseAPIAddress);
+        dialog.setReverseAPIPort(m_settings.m_reverseAPIPort);
+        dialog.setReverseAPIFeatureSetIndex(m_settings.m_reverseAPIFeatureSetIndex);
+        dialog.setReverseAPIFeatureIndex(m_settings.m_reverseAPIFeatureIndex);
+        dialog.setDefaultTitle(m_displayedName);
+
+        dialog.move(p);
+        new DialogPositioner(&dialog, false);
+        dialog.exec();
+
+        m_settings.m_title = dialog.getTitle();
+        m_settings.m_useReverseAPI = dialog.useReverseAPI();
+        m_settings.m_reverseAPIAddress = dialog.getReverseAPIAddress();
+        m_settings.m_reverseAPIPort = dialog.getReverseAPIPort();
+        m_settings.m_reverseAPIFeatureSetIndex = dialog.getReverseAPIFeatureSetIndex();
+        m_settings.m_reverseAPIFeatureIndex = dialog.getReverseAPIFeatureIndex();
+
+        setTitle(m_settings.m_title);
+        setTitleColor(m_settings.m_rgbColor);
+
+        m_settingsKeys.append("title");
+        m_settingsKeys.append("rgbColor");
+        m_settingsKeys.append("useReverseAPI");
+        m_settingsKeys.append("reverseAPIAddress");
+        m_settingsKeys.append("reverseAPIPort");
+        m_settingsKeys.append("reverseAPIFeatureSetIndex");
+        m_settingsKeys.append("reverseAPIFeatureIndex");
+
+        applySettings(m_settingsKeys);
     }
 
-    QStringList settingsKeys;
-    settingsKeys.append("title");
-    settingsKeys.append("selectedChannel");
-    settingsKeys.append("workspaceIndex");
-    settingsKeys.append("geometryBytes");
-    settingsKeys.append("fontName");
-    settingsKeys.append("transparentBackground");
-    settingsKeys.append("displayMode");
-    settingsKeys.append("speechEnabled");
-    settingsKeys.append("frequencyUnits");
-    settingsKeys.append("showUnits");
-    settingsKeys.append("freqDecimalPlaces");
-    settingsKeys.append("powerDecimalPlaces");
-    settingsKeys.append("textColor");
-    settingsKeys.append("dropShadowEnabled");
-    settingsKeys.append("dropShadowColor");
-    m_freqDisplay->applySettings(m_settings, settingsKeys, force);
+    resetContextMenuType();
+}
+
+void FreqDisplayGUI::applySetting(const QString& settingsKey)
+{
+    applySettings({settingsKey});
+}
+
+void FreqDisplayGUI::applySettings(const QStringList& settingsKeys, bool force)
+{
+    m_settingsKeys.append(settingsKeys);
+    if (m_doApplySettings)
+    {
+        m_freqDisplay->applySettings(m_settings, settingsKeys, force);
+        m_settingsKeys.clear();
+    }
+}
+
+void FreqDisplayGUI::applyAllSettings()
+{
+    applySettings(QStringList(), true);
 }
 
 void FreqDisplayGUI::updateChannelList()
@@ -374,7 +396,7 @@ void FreqDisplayGUI::channelsOrFeaturesChanged(const QStringList& renameFrom, co
     }
 
     updateChannelList();
-    applySettings();
+    applySetting("selectedChannel");
     updateFrequencyText();
 }
 
@@ -386,7 +408,7 @@ void FreqDisplayGUI::on_channels_currentIndexChanged(int index)
         m_settings.m_selectedChannel.clear();
     }
 
-    applySettings();
+    applySetting("selectedChannel");
     updateFrequencyText();
 }
 
@@ -698,7 +720,7 @@ void FreqDisplayGUI::on_textColor_clicked()
         m_settings.m_textColor = color;
         updateTextColorButton();
         applyTextColor();
-        applySettings();
+        applySetting("textColor");
     }
 }
 
@@ -706,7 +728,7 @@ void FreqDisplayGUI::on_dropShadow_toggled(bool checked)
 {
     m_settings.m_dropShadowEnabled = checked;
     applyDropShadow();
-    applySettings();
+    applySetting("dropShadowEnabled");
 }
 
 void FreqDisplayGUI::on_dropShadowColor_clicked()
@@ -718,14 +740,14 @@ void FreqDisplayGUI::on_dropShadowColor_clicked()
         m_settings.m_dropShadowColor = color;
         updateDropShadowColorButton();
         applyDropShadow();
-        applySettings();
+        applySetting("dropShadowColor");
     }
 }
 
 void FreqDisplayGUI::on_displayMode_currentIndexChanged(int index)
 {
     m_settings.m_displayMode = static_cast<FreqDisplaySettings::DisplayMode>(index);
-    applySettings();
+    applySetting("displayMode");
     updateFrequencyText();
 }
 
@@ -734,7 +756,7 @@ void FreqDisplayGUI::on_speech_toggled(bool checked)
     bool hadSpeech = m_settings.m_speechEnabled;
     m_settings.m_speechEnabled = checked;
     applySpeech();
-    applySettings();
+    applySetting("speechEnabled");
 #ifdef QT_TEXTTOSPEECH_FOUND
     if (checked && !hadSpeech && m_speech)
     {
@@ -748,7 +770,7 @@ void FreqDisplayGUI::on_speech_toggled(bool checked)
 void FreqDisplayGUI::on_fontFamily_currentFontChanged(const QFont& font)
 {
     m_settings.m_fontName = font.family();
-    applySettings();
+    applySetting("fontName");
     updateFrequencyFont();
 }
 
@@ -756,14 +778,14 @@ void FreqDisplayGUI::on_frequencyUnits_currentIndexChanged(int index)
 {
     m_settings.m_frequencyUnits = static_cast<FreqDisplaySettings::FrequencyUnits>(index);
     updateFreqDecimalSpinbox();
-    applySettings();
+    applySetting("frequencyUnits");
     updateFrequencyText();
 }
 
 void FreqDisplayGUI::on_showUnits_toggled(bool checked)
 {
     m_settings.m_showUnits = checked;
-    applySettings();
+    applySetting("showUnits");
     updateFrequencyText();
 }
 
@@ -795,14 +817,14 @@ void FreqDisplayGUI::updateFreqDecimalSpinbox()
 void FreqDisplayGUI::on_freqDecimalPlaces_valueChanged(int value)
 {
     m_settings.m_freqDecimalPlaces = value;
-    applySettings();
+    applySetting("freqDecimalPlaces");
     updateFrequencyText();
 }
 
 void FreqDisplayGUI::on_powerDecimalPlaces_valueChanged(int value)
 {
     m_settings.m_powerDecimalPlaces = value;
-    applySettings();
+    applySetting("powerDecimalPlaces");
     updateFrequencyText();
 }
 
@@ -838,7 +860,7 @@ void FreqDisplayGUI::on_transparentBackground_toggled(bool checked)
 {
     m_settings.m_transparentBackground = checked;
     applyTransparency();
-    applySettings();
+    applySetting("transparentBackground");
 }
 
 void FreqDisplayGUI::onExitTransparentMode()
@@ -848,7 +870,7 @@ void FreqDisplayGUI::onExitTransparentMode()
     ui->transparentBackground->setChecked(false);
     ui->transparentBackground->blockSignals(false);
     applyTransparency();
-    applySettings();
+    applySetting("transparentBackground");
 }
 
 void FreqDisplayGUI::resizeEvent(QResizeEvent *event)
@@ -866,5 +888,20 @@ void FreqDisplayGUI::speechStateChanged(QTextToSpeech::State state)
         m_pendingSpeechText.clear();
         m_speech->say(text);
     }
+}
+
+// Expand display-text unit abbreviations to full spoken words so that TTS
+// engines read them naturally rather than letter-by-letter.
+QString FreqDisplayGUI::textForSpeech(const QString& displayText)
+{
+    QString s = displayText;
+    // Order matters: longer unit strings must be replaced before shorter ones
+    // that are sub-strings of them (e.g. "GHz" before "Hz").
+    s.replace(QLatin1String(" GHz"), QLatin1String(" gigahertz"));
+    s.replace(QLatin1String(" MHz"), QLatin1String(" megahertz"));
+    s.replace(QLatin1String(" kHz"), QLatin1String(" kilohertz"));
+    s.replace(QLatin1String(" Hz"),  QLatin1String(" hertz"));
+    s.replace(QLatin1String(" dB"),  QLatin1String(" decibels"));
+    return s;
 }
 #endif
