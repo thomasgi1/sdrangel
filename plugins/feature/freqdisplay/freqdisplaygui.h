@@ -126,18 +126,18 @@ private:
     static QString textForSpeech(const QString& displayText);
 #endif
 
-    static constexpr const char* rxTxChannelKinds = "RT";
-    static constexpr int pollIntervalMs = 1000;
-    static constexpr int minimumFrequencyFontPointSize = 10;
+    static constexpr const char* m_rxTxChannelKinds = "RT";
+    static constexpr int m_pollIntervalMs = 1000;
+    static constexpr int m_minimumFrequencyFontPointSize = 10;
     /// Reference point size used when probing text metrics in updateFrequencyFont().
     /// Large enough that integer rounding in QFontMetrics is negligible.
-    static constexpr int fontProbePointSize = 200;
-    static constexpr double kHzDivisor = 1e3;
-    static constexpr double MHzDivisor = 1e6;
-    static constexpr double GHzDivisor = 1e9;
-    static constexpr double dropShadowBlurRadius = 10.0;
-    static constexpr double dropShadowOffsetX = 2.0;
-    static constexpr double dropShadowOffsetY = 2.0;
+    static constexpr int m_fontProbePointSize = 200;
+    static constexpr double m_kHzDivisor = 1e3;
+    static constexpr double m_MHzDivisor = 1e6;
+    static constexpr double m_GHzDivisor = 1e9;
+    static constexpr double m_dropShadowBlurRadius = 10.0;
+    static constexpr double m_dropShadowOffsetX = 2.0;
+    static constexpr double m_dropShadowOffsetY = 2.0;
 
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     ~FreqDisplayGUI() override;

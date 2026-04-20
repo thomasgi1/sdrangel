@@ -170,7 +170,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     FeatureGUI(parent),
     ui(new Ui::FreqDisplayGUI),
     m_freqDisplay(reinterpret_cast<FreqDisplay*>(feature)),
-    m_availableChannelOrFeatureHandler(QStringList(), rxTxChannelKinds),
+    m_availableChannelOrFeatureHandler(QStringList(), m_rxTxChannelKinds),
     m_doApplySettings(true),
     m_overlay(nullptr)
 {
@@ -212,7 +212,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     connect(ui->dropShadow, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_dropShadow_toggled);
     connect(ui->dropShadowColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_dropShadowColor_clicked);
     connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
-    m_pollTimer.start(pollIntervalMs);
+    m_pollTimer.start(m_pollIntervalMs);
 
 #ifndef QT_TEXTTOSPEECH_FOUND
     ui->speech->setVisible(false);
@@ -524,7 +524,7 @@ void FreqDisplayGUI::updateFrequencyFont()
 
     // Probe at a large reference size to get accurate text dimensions, then
     // scale linearly to find the largest point size that fits in both directions.
-    font.setPointSize(fontProbePointSize);
+    font.setPointSize(m_fontProbePointSize);
     const QFontMetrics fm(font);
 
     // For multi-line text (Both mode) find the widest line; divide available
@@ -543,17 +543,17 @@ void FreqDisplayGUI::updateFrequencyFont()
 
     maxLineWidth += 5; // Add some space for a border
 
-    const int maxFromWidth  = fontProbePointSize * availableWidth  / maxLineWidth;
-    const int maxFromHeight = fontProbePointSize * availableHeight / (lineHeight * numLines);
-    int pointSize = qMax(minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
+    const int maxFromWidth  = m_fontProbePointSize * availableWidth  / maxLineWidth;
+    const int maxFromHeight = m_fontProbePointSize * availableHeight / (lineHeight * numLines);
+    int pointSize = qMax(m_minimumFrequencyFontPointSize, qMin(maxFromWidth, maxFromHeight));
     font.setPointSize(pointSize);
 
     // Verify the text actually fits at the calculated point size.  The linear
-    // interpolation from fontProbePointSize can be slightly inaccurate due to
+    // interpolation from m_fontProbePointSize can be slightly inaccurate due to
     // font hinting or non-linear glyph metrics at the target size; if the text
     // would overflow either horizontally or vertically, reduce by one point at a
     // time until it fits.
-    while (pointSize > minimumFrequencyFontPointSize)
+    while (pointSize > m_minimumFrequencyFontPointSize)
     {
         const QFontMetrics verifyFm(font);
         bool overflow = false;
@@ -679,8 +679,8 @@ void FreqDisplayGUI::applyDropShadow()
     {
         auto* effect = new QGraphicsDropShadowEffect(target);
         effect->setColor(m_settings.m_dropShadowColor);
-        effect->setBlurRadius(dropShadowBlurRadius);
-        effect->setOffset(dropShadowOffsetX, dropShadowOffsetY);
+        effect->setBlurRadius(m_dropShadowBlurRadius);
+        effect->setOffset(m_dropShadowOffsetX, m_dropShadowOffsetY);
         target->setGraphicsEffect(effect);
     }
     else
@@ -815,15 +815,15 @@ QString FreqDisplayGUI::formatFrequency(qint64 frequencyHz) const
     switch (m_settings.m_frequencyUnits)
     {
     case FreqDisplaySettings::kHz: {
-        const QString s = locale.toString(frequencyHz / kHzDivisor, 'f', dp);
+        const QString s = locale.toString(frequencyHz / m_kHzDivisor, 'f', dp);
         return showUnits ? s + tr(" kHz") : s;
     }
     case FreqDisplaySettings::MHz: {
-        const QString s = locale.toString(frequencyHz / MHzDivisor, 'f', dp);
+        const QString s = locale.toString(frequencyHz / m_MHzDivisor, 'f', dp);
         return showUnits ? s + tr(" MHz") : s;
     }
     case FreqDisplaySettings::GHz: {
-        const QString s = locale.toString(frequencyHz / GHzDivisor, 'f', dp);
+        const QString s = locale.toString(frequencyHz / m_GHzDivisor, 'f', dp);
         return showUnits ? s + tr(" GHz") : s;
     }
     case FreqDisplaySettings::Hz:
