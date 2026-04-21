@@ -123,22 +123,27 @@ void USRPOutputThread::run()
 //  Interpolate according to specified log2 (ex: log2=4 => decim=16)
 void USRPOutputThread::callback(qint16* buf, qint32 len)
 {
+    if (len <= 0) {
+        return;
+    }
+
+    const unsigned int interpolationFactor = 1U << m_log2Interp;
     SampleVector& data = m_sampleFifo->getData();
     unsigned int iPart1Begin, iPart1End, iPart2Begin, iPart2End;
-    m_sampleFifo->read(len/(1<<m_log2Interp), iPart1Begin, iPart1End, iPart2Begin, iPart2End);
+    m_sampleFifo->read(static_cast<unsigned int>(len)/interpolationFactor, iPart1Begin, iPart1End, iPart2Begin, iPart2End);
 
     if (iPart1Begin != iPart1End) {
         callbackPart(buf, data, iPart1Begin, iPart1End);
     }
 
-    unsigned int shift = (iPart1End - iPart1Begin)*(1<<m_log2Interp);
+    unsigned int shift = (iPart1End - iPart1Begin)*interpolationFactor;
 
     if (iPart2Begin != iPart2End) {
         callbackPart(buf + 2*shift, data, iPart2Begin, iPart2End);
     }
 
     const unsigned int writtenSamples =
-            ((iPart1End - iPart1Begin) + (iPart2End - iPart2Begin)) * (1U << m_log2Interp);
+            ((iPart1End - iPart1Begin) + (iPart2End - iPart2Begin)) * interpolationFactor;
 
     if (writtenSamples < static_cast<unsigned int>(len))
     {
