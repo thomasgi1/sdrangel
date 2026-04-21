@@ -123,6 +123,7 @@ void USRPOutputThread::run()
 //  Interpolate according to specified log2 (ex: log2=4 => decim=16)
 void USRPOutputThread::callback(qint16* buf, qint32 len)
 {
+    // Keep signed length to match callback interfaces used by other output threads.
     if (len <= 0) {
         return;
     }
@@ -130,6 +131,7 @@ void USRPOutputThread::callback(qint16* buf, qint32 len)
     const unsigned int interpolationFactor = 1U << m_log2Interp;
     SampleVector& data = m_sampleFifo->getData();
     unsigned int iPart1Begin, iPart1End, iPart2Begin, iPart2End;
+    // Truncation is intentional here: reading more would overrun the fixed TX buffer when len is not divisible by interpolation factor.
     m_sampleFifo->read(static_cast<unsigned int>(len)/interpolationFactor, iPart1Begin, iPart1End, iPart2Begin, iPart2End);
 
     if (iPart1Begin != iPart1End) {
