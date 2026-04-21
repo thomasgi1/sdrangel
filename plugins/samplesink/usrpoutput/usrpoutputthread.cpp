@@ -123,10 +123,6 @@ void USRPOutputThread::run()
 //  Interpolate according to specified log2 (ex: log2=4 => decim=16)
 void USRPOutputThread::callback(qint16* buf, qint32 len)
 {
-    // Fill any sample tail not overwritten by interpolation (for non power-of-two streamer block sizes)
-    // so stale data is never transmitted.
-    std::fill(buf, buf + (2 * len), 0);
-
     SampleVector& data = m_sampleFifo->getData();
     unsigned int iPart1Begin, iPart1End, iPart2Begin, iPart2End;
     m_sampleFifo->read(len/(1<<m_log2Interp), iPart1Begin, iPart1End, iPart2Begin, iPart2End);
@@ -139,6 +135,14 @@ void USRPOutputThread::callback(qint16* buf, qint32 len)
 
     if (iPart2Begin != iPart2End) {
         callbackPart(buf + 2*shift, data, iPart2Begin, iPart2End);
+    }
+
+    const unsigned int writtenSamples =
+            ((iPart1End - iPart1Begin) + (iPart2End - iPart2Begin)) * (1U << m_log2Interp);
+
+    if (writtenSamples < static_cast<unsigned int>(len))
+    {
+        std::fill(buf + 2*writtenSamples, buf + 2*len, 0);
     }
 }
 
