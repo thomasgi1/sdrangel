@@ -41,7 +41,7 @@ USRPOutputThread::USRPOutputThread(uhd::tx_streamer::sptr stream, size_t bufSamp
 USRPOutputThread::~USRPOutputThread()
 {
     stopWork();
-    delete m_buf;
+    delete[] m_buf;
 }
 
 void USRPOutputThread::startWork()
@@ -123,6 +123,10 @@ void USRPOutputThread::run()
 //  Interpolate according to specified log2 (ex: log2=4 => decim=16)
 void USRPOutputThread::callback(qint16* buf, qint32 len)
 {
+    // Fill any sample tail not overwritten by interpolation (for non power-of-two streamer block sizes)
+    // so stale data is never transmitted.
+    std::fill(buf, buf + (2 * len), 0);
+
     SampleVector& data = m_sampleFifo->getData();
     unsigned int iPart1Begin, iPart1End, iPart2Begin, iPart2End;
     m_sampleFifo->read(len/(1<<m_log2Interp), iPart1Begin, iPart1End, iPart2Begin, iPart2End);
