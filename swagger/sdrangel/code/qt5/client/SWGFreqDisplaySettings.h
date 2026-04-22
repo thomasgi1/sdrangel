@@ -64,6 +64,9 @@ public:
     qint32 getShowUnits();
     void setShowUnits(qint32 show_units);
 
+    qint32 getFreqDecimalPlaces();
+    void setFreqDecimalPlaces(qint32 freq_decimal_places);
+
     qint32 getPowerDecimalPlaces();
     void setPowerDecimalPlaces(qint32 power_decimal_places);
 
@@ -72,6 +75,9 @@ public:
 
     qint32 getDropShadowEnabled();
     void setDropShadowEnabled(qint32 drop_shadow_enabled);
+
+    qint32 getDropShadowColor();
+    void setDropShadowColor(qint32 drop_shadow_color);
 
     QString* getTitle();
     void setTitle(QString* title);
@@ -122,6 +128,9 @@ private:
     qint32 show_units;
     bool m_show_units_isSet;
 
+    qint32 freq_decimal_places;
+    bool m_freq_decimal_places_isSet;
+
     qint32 power_decimal_places;
     bool m_power_decimal_places_isSet;
 
@@ -130,6 +139,9 @@ private:
 
     qint32 drop_shadow_enabled;
     bool m_drop_shadow_enabled_isSet;
+
+    qint32 drop_shadow_color;
+    bool m_drop_shadow_color_isSet;
 
     QString* title;
     bool m_title_isSet;

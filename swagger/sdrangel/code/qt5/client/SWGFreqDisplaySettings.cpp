@@ -42,12 +42,16 @@ SWGFreqDisplaySettings::SWGFreqDisplaySettings() {
     m_frequency_units_isSet = false;
     show_units = 0;
     m_show_units_isSet = false;
+    freq_decimal_places = 0;
+    m_freq_decimal_places_isSet = false;
     power_decimal_places = 0;
     m_power_decimal_places_isSet = false;
     textcolor = 0;
     m_textcolor_isSet = false;
     drop_shadow_enabled = 0;
     m_drop_shadow_enabled_isSet = false;
+    drop_shadow_color = 0;
+    m_drop_shadow_color_isSet = false;
     title = nullptr;
     m_title_isSet = false;
     rgb_color = 0;
@@ -86,12 +90,16 @@ SWGFreqDisplaySettings::init() {
     m_frequency_units_isSet = false;
     show_units = 0;
     m_show_units_isSet = false;
+    freq_decimal_places = 0;
+    m_freq_decimal_places_isSet = false;
     power_decimal_places = 0;
     m_power_decimal_places_isSet = false;
     textcolor = 0;
     m_textcolor_isSet = false;
     drop_shadow_enabled = 0;
     m_drop_shadow_enabled_isSet = false;
+    drop_shadow_color = 0;
+    m_drop_shadow_color_isSet = false;
     title = new QString("");
     m_title_isSet = false;
     rgb_color = 0;
@@ -118,6 +126,8 @@ SWGFreqDisplaySettings::cleanup() {
     if(font_name != nullptr) { 
         delete font_name;
     }
+
+
 
 
 
@@ -167,11 +177,15 @@ SWGFreqDisplaySettings::fromJsonObject(QJsonObject &pJson) {
     
     ::SWGSDRangel::setValue(&show_units, pJson["showUnits"], "qint32", "");
     
+    ::SWGSDRangel::setValue(&freq_decimal_places, pJson["freqDecimalPlaces"], "qint32", "");
+    
     ::SWGSDRangel::setValue(&power_decimal_places, pJson["powerDecimalPlaces"], "qint32", "");
     
     ::SWGSDRangel::setValue(&textcolor, pJson["textcolor"], "qint32", "");
     
     ::SWGSDRangel::setValue(&drop_shadow_enabled, pJson["dropShadowEnabled"], "qint32", "");
+    
+    ::SWGSDRangel::setValue(&drop_shadow_color, pJson["dropShadowColor"], "qint32", "");
     
     ::SWGSDRangel::setValue(&title, pJson["title"], "QString", "QString");
     
@@ -226,6 +240,9 @@ SWGFreqDisplaySettings::asJsonObject() {
     if(m_show_units_isSet){
         obj->insert("showUnits", QJsonValue(show_units));
     }
+    if(m_freq_decimal_places_isSet){
+        obj->insert("freqDecimalPlaces", QJsonValue(freq_decimal_places));
+    }
     if(m_power_decimal_places_isSet){
         obj->insert("powerDecimalPlaces", QJsonValue(power_decimal_places));
     }
@@ -234,6 +251,9 @@ SWGFreqDisplaySettings::asJsonObject() {
     }
     if(m_drop_shadow_enabled_isSet){
         obj->insert("dropShadowEnabled", QJsonValue(drop_shadow_enabled));
+    }
+    if(m_drop_shadow_color_isSet){
+        obj->insert("dropShadowColor", QJsonValue(drop_shadow_color));
     }
     if(title != nullptr && *title != QString("")){
         toJsonValue(QString("title"), title, obj, QString("QString"));
@@ -334,6 +354,16 @@ SWGFreqDisplaySettings::setShowUnits(qint32 show_units) {
 }
 
 qint32
+SWGFreqDisplaySettings::getFreqDecimalPlaces() {
+    return freq_decimal_places;
+}
+void
+SWGFreqDisplaySettings::setFreqDecimalPlaces(qint32 freq_decimal_places) {
+    this->freq_decimal_places = freq_decimal_places;
+    this->m_freq_decimal_places_isSet = true;
+}
+
+qint32
 SWGFreqDisplaySettings::getPowerDecimalPlaces() {
     return power_decimal_places;
 }
@@ -361,6 +391,16 @@ void
 SWGFreqDisplaySettings::setDropShadowEnabled(qint32 drop_shadow_enabled) {
     this->drop_shadow_enabled = drop_shadow_enabled;
     this->m_drop_shadow_enabled_isSet = true;
+}
+
+qint32
+SWGFreqDisplaySettings::getDropShadowColor() {
+    return drop_shadow_color;
+}
+void
+SWGFreqDisplaySettings::setDropShadowColor(qint32 drop_shadow_color) {
+    this->drop_shadow_color = drop_shadow_color;
+    this->m_drop_shadow_color_isSet = true;
 }
 
 QString*
@@ -469,6 +509,9 @@ SWGFreqDisplaySettings::isSet(){
         if(m_show_units_isSet){
             isObjectUpdated = true; break;
         }
+        if(m_freq_decimal_places_isSet){
+            isObjectUpdated = true; break;
+        }
         if(m_power_decimal_places_isSet){
             isObjectUpdated = true; break;
         }
@@ -476,6 +519,9 @@ SWGFreqDisplaySettings::isSet(){
             isObjectUpdated = true; break;
         }
         if(m_drop_shadow_enabled_isSet){
+            isObjectUpdated = true; break;
+        }
+        if(m_drop_shadow_color_isSet){
             isObjectUpdated = true; break;
         }
         if(title && *title != QString("")){

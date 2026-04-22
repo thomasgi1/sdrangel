@@ -19,12 +19,14 @@ FreqDisplaySettings:
     showUnits:
       type: integer
     freqDecimalPlaces:
-      type; integer
+      type: integer
     powerDecimalPlaces:
       type: integer
     textcolor:
       type: integer
     dropShadowEnabled:
+      type: integer    
+    dropShadowColor:
       type: integer    
     title:
       type: string
