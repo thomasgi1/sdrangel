@@ -102,7 +102,6 @@ public:
         SWGSDRangel::SWGFeatureSettings& response);
 
     const FreqDisplaySettings& getSettings() const { return m_settings; }
-    void applySettings(const FreqDisplaySettings& settings, const QStringList& settingsKeys, bool force = false);
 
     static const char* const m_featureIdURI;
     static const char* const m_featureId;
@@ -114,6 +113,7 @@ private:
 
     void webapiReverseSendSettings(const QStringList& featureSettingsKeys, const FreqDisplaySettings& settings, bool force);
     void webapiFormatFeatureReport(SWGSDRangel::SWGFeatureReport& response);
+    void applySettings(const FreqDisplaySettings& settings, const QStringList& settingsKeys, bool force = false);
 
 private slots:
     void networkManagerFinished(QNetworkReply *reply);

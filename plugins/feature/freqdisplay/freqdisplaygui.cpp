@@ -355,7 +355,8 @@ void FreqDisplayGUI::applySettings(const QStringList& settingsKeys, bool force)
     m_settingsKeys.append(settingsKeys);
     if (m_doApplySettings)
     {
-        m_freqDisplay->applySettings(m_settings, settingsKeys, force);
+        FreqDisplay::MsgConfigureFreqDisplay *msg = FreqDisplay::MsgConfigureFreqDisplay::create(m_settings, settingsKeys, force);
+        m_freqDisplay->getInputMessageQueue()->push(msg);
         m_settingsKeys.clear();
     }
 }
