@@ -27,6 +27,7 @@
 #include "SWGFreqDisplayReport.h"
 
 #include "channel/channelwebapiutils.h"
+#include "maincore.h"
 #include "settings/serializable.h"
 
 #include "freqdisplay.h"
@@ -364,41 +365,24 @@ void FreqDisplay::webapiReverseSendSettings(const QStringList& featureSettingsKe
 
 void FreqDisplay::webapiFormatFeatureReport(SWGSDRangel::SWGFeatureReport& response)
 {
-    // Parse the selected channel long ID (format: "R{superIndex}:{channelIndex} {type}"
-    // or "T{superIndex}:{channelIndex} {type}") to obtain device set and channel indices.
     qint64 frequency = 0;
     float power = 0.0f;
 
-    const QString& selectedChannel = m_settings.m_selectedChannel;
-    if (!selectedChannel.isEmpty())
+    unsigned int superIndex = 0;
+    unsigned int channelIndex = 0;
+    if (MainCore::getDeviceAndChannelIndexFromId(m_settings.m_selectedChannel, superIndex, channelIndex))
     {
-        const QChar kind = selectedChannel[0];
-        if (kind == 'R' || kind == 'T')
+        double centerFrequencyHz = 0.0;
+        int offsetHz = 0;
+        if (ChannelWebAPIUtils::getCenterFrequency(superIndex, centerFrequencyHz) &&
+            ChannelWebAPIUtils::getFrequencyOffset(superIndex, channelIndex, offsetHz))
         {
-            const int colonPos = selectedChannel.indexOf(':');
-            const int spacePos = selectedChannel.indexOf(' ', colonPos);
-            if (colonPos > 0 && spacePos > colonPos)
-            {
-                bool ok1, ok2;
-                const int superIndex = selectedChannel.mid(1, colonPos - 1).toInt(&ok1);
-                const int channelIndex = selectedChannel.mid(colonPos + 1, spacePos - colonPos - 1).toInt(&ok2);
+            frequency = qRound64(centerFrequencyHz) + static_cast<qint64>(offsetHz);
+        }
 
-                if (ok1 && ok2)
-                {
-                    double centerFrequencyHz = 0.0;
-                    int offsetHz = 0;
-                    if (ChannelWebAPIUtils::getCenterFrequency(superIndex, centerFrequencyHz) &&
-                        ChannelWebAPIUtils::getFrequencyOffset(superIndex, channelIndex, offsetHz))
-                    {
-                        frequency = qRound64(centerFrequencyHz) + static_cast<qint64>(offsetHz);
-                    }
-
-                    double powerDb = 0.0;
-                    if (ChannelWebAPIUtils::getChannelReportValue(superIndex, channelIndex, "channelPowerDB", powerDb)) {
-                        power = static_cast<float>(powerDb);
-                    }
-                }
-            }
+        double powerDb = 0.0;
+        if (ChannelWebAPIUtils::getChannelReportValue(superIndex, channelIndex, "channelPowerDB", powerDb)) {
+            power = static_cast<float>(powerDb);
         }
     }
 
