@@ -92,7 +92,8 @@ public:
     static FreqDisplayGUI* create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature);
     void destroy() override;
 
-    bool handleMessage(const Message& message) override;
+    bool handleMessage(const Message& message);
+    void makeUIConnections();
 
     void resetToDefaults() override;
     QByteArray serialize() const override;

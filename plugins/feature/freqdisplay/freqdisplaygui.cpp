@@ -214,19 +214,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     );
     m_availableChannelOrFeatureHandler.scanAvailableChannelsAndFeatures();
 
-    connect(ui->channels, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_channels_currentIndexChanged);
-    connect(ui->displayMode, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_displayMode_currentIndexChanged);
-    connect(ui->speech, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_speech_toggled);
-    connect(ui->fontFamily, &QFontComboBox::currentFontChanged, this, &FreqDisplayGUI::on_fontFamily_currentFontChanged);
-    connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
-    connect(ui->frequencyUnits, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_frequencyUnits_currentIndexChanged);
-    connect(ui->showUnits, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_showUnits_toggled);
-    connect(ui->freqDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_freqDecimalPlaces_valueChanged);
-    connect(ui->powerDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_powerDecimalPlaces_valueChanged);
-    connect(ui->textColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_textColor_clicked);
-    connect(ui->dropShadow, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_dropShadow_toggled);
-    connect(ui->dropShadowColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_dropShadowColor_clicked);
-    connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
+    makeUIConnections();
     m_pollTimer.start(m_pollIntervalMs);
 
 #ifndef QT_TEXTTOSPEECH_FOUND
@@ -935,3 +923,20 @@ QString FreqDisplayGUI::textForSpeech(const QString& displayText)
     return s;
 }
 #endif
+
+void FreqDisplayGUI::makeUIConnections()
+{
+    connect(ui->channels, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_channels_currentIndexChanged);
+    connect(ui->displayMode, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_displayMode_currentIndexChanged);
+    connect(ui->speech, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_speech_toggled);
+    connect(ui->fontFamily, &QFontComboBox::currentFontChanged, this, &FreqDisplayGUI::on_fontFamily_currentFontChanged);
+    connect(ui->transparentBackground, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_transparentBackground_toggled);
+    connect(ui->frequencyUnits, qOverload<int>(&QComboBox::currentIndexChanged), this, &FreqDisplayGUI::on_frequencyUnits_currentIndexChanged);
+    connect(ui->showUnits, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_showUnits_toggled);
+    connect(ui->freqDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_freqDecimalPlaces_valueChanged);
+    connect(ui->powerDecimalPlaces, qOverload<int>(&QSpinBox::valueChanged), this, &FreqDisplayGUI::on_powerDecimalPlaces_valueChanged);
+    connect(ui->textColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_textColor_clicked);
+    connect(ui->dropShadow, &ButtonSwitch::toggled, this, &FreqDisplayGUI::on_dropShadow_toggled);
+    connect(ui->dropShadowColor, &QPushButton::clicked, this, &FreqDisplayGUI::on_dropShadowColor_clicked);
+    connect(&m_pollTimer, &QTimer::timeout, this, &FreqDisplayGUI::pollSelectedChannel);
+}
