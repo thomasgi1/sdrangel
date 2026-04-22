@@ -33,6 +33,7 @@ class QNetworkReply;
 
 namespace SWGSDRangel {
     class SWGFeatureSettings;
+    class SWGFeatureReport;
 }
 
 class FreqDisplay : public Feature
@@ -87,6 +88,10 @@ public:
         SWGSDRangel::SWGFeatureSettings& response,
         QString& errorMessage) override;
 
+    int webapiReportGet(
+        SWGSDRangel::SWGFeatureReport& response,
+        QString& errorMessage) override;
+
     static void webapiFormatFeatureSettings(
         SWGSDRangel::SWGFeatureSettings& response,
         const FreqDisplaySettings& settings);
@@ -108,6 +113,7 @@ private:
     QNetworkRequest m_networkRequest;
 
     void webapiReverseSendSettings(const QStringList& featureSettingsKeys, const FreqDisplaySettings& settings, bool force);
+    void webapiFormatFeatureReport(SWGSDRangel::SWGFeatureReport& response);
 
 private slots:
     void networkManagerFinished(QNetworkReply *reply);

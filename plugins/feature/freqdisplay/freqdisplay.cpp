@@ -22,8 +22,11 @@
 #include <QBuffer>
 
 #include "SWGFeatureSettings.h"
+#include "SWGFeatureReport.h"
 #include "SWGFreqDisplaySettings.h"
+#include "SWGFreqDisplayReport.h"
 
+#include "channel/channelwebapiutils.h"
 #include "settings/serializable.h"
 
 #include "freqdisplay.h"
@@ -143,6 +146,17 @@ int FreqDisplay::webapiSettingsPutPatch(
     return 200;
 }
 
+int FreqDisplay::webapiReportGet(
+    SWGSDRangel::SWGFeatureReport& response,
+    QString& errorMessage)
+{
+    (void) errorMessage;
+    response.setFreqDisplayReport(new SWGSDRangel::SWGFreqDisplayReport());
+    response.getFreqDisplayReport()->init();
+    webapiFormatFeatureReport(response);
+    return 200;
+}
+
 void FreqDisplay::webapiFormatFeatureSettings(
     SWGSDRangel::SWGFeatureSettings& response,
     const FreqDisplaySettings& settings)
@@ -172,9 +186,11 @@ void FreqDisplay::webapiFormatFeatureSettings(
     response.getFreqDisplaySettings()->setSpeechEnabled(settings.m_speechEnabled ? 1 : 0);
     response.getFreqDisplaySettings()->setFrequencyUnits(static_cast<int>(settings.m_frequencyUnits));
     response.getFreqDisplaySettings()->setShowUnits(settings.m_showUnits ? 1 : 0);
+    response.getFreqDisplaySettings()->setFreqDecimalPlaces(settings.m_freqDecimalPlaces);
     response.getFreqDisplaySettings()->setPowerDecimalPlaces(settings.m_powerDecimalPlaces);
     response.getFreqDisplaySettings()->setTextcolor(settings.m_textColor.rgba());
     response.getFreqDisplaySettings()->setDropShadowEnabled(settings.m_dropShadowEnabled ? 1 : 0);
+    response.getFreqDisplaySettings()->setDropShadowColor(settings.m_dropShadowColor.rgba());
     response.getFreqDisplaySettings()->setUseReverseApi(settings.m_useReverseAPI ? 1 : 0);
 
     if (response.getFreqDisplaySettings()->getReverseApiAddress()) {
@@ -234,6 +250,9 @@ void FreqDisplay::webapiUpdateFeatureSettings(
     if (featureSettingsKeys.contains("showUnits")) {
         settings.m_showUnits = response.getFreqDisplaySettings()->getShowUnits() != 0;
     }
+    if (featureSettingsKeys.contains("freqDecimalPlaces")) {
+        settings.m_freqDecimalPlaces = response.getFreqDisplaySettings()->getFreqDecimalPlaces();
+    }
     if (featureSettingsKeys.contains("powerDecimalPlaces")) {
         settings.m_powerDecimalPlaces = response.getFreqDisplaySettings()->getPowerDecimalPlaces();
     }
@@ -242,6 +261,9 @@ void FreqDisplay::webapiUpdateFeatureSettings(
     }
     if (featureSettingsKeys.contains("dropShadowEnabled")) {
         settings.m_dropShadowEnabled = response.getFreqDisplaySettings()->getDropShadowEnabled() != 0;
+    }
+    if (featureSettingsKeys.contains("dropShadowColor")) {
+        settings.m_dropShadowColor = QColor::fromRgba(response.getFreqDisplaySettings()->getDropShadowColor());
     }
     if (featureSettingsKeys.contains("useReverseAPI")) {
         settings.m_useReverseAPI = response.getFreqDisplaySettings()->getUseReverseApi() != 0;
@@ -297,6 +319,9 @@ void FreqDisplay::webapiReverseSendSettings(const QStringList& featureSettingsKe
     if (featureSettingsKeys.contains("showUnits") || force) {
         swgFreqDisplaySettings->setShowUnits(settings.m_showUnits ? 1 : 0);
     }
+    if (featureSettingsKeys.contains("freqDecimalPlaces") || force) {
+        swgFreqDisplaySettings->setFreqDecimalPlaces(settings.m_freqDecimalPlaces);
+    }
     if (featureSettingsKeys.contains("powerDecimalPlaces") || force) {
         swgFreqDisplaySettings->setPowerDecimalPlaces(settings.m_powerDecimalPlaces);
     }
@@ -305,6 +330,9 @@ void FreqDisplay::webapiReverseSendSettings(const QStringList& featureSettingsKe
     }
     if (featureSettingsKeys.contains("dropShadowEnabled") || force) {
         swgFreqDisplaySettings->setDropShadowEnabled(settings.m_dropShadowEnabled ? 1 : 0);
+    }
+    if (featureSettingsKeys.contains("dropShadowColor") || force) {
+        swgFreqDisplaySettings->setDropShadowColor(settings.m_dropShadowColor.rgba());
     }
 
     QString featureSettingsURL = QString("http://%1:%2/sdrangel/featureset/%3/feature/%4/settings")
@@ -325,6 +353,50 @@ void FreqDisplay::webapiReverseSendSettings(const QStringList& featureSettingsKe
     buffer->setParent(reply);
 
     delete swgFeatureSettings;
+}
+
+void FreqDisplay::webapiFormatFeatureReport(SWGSDRangel::SWGFeatureReport& response)
+{
+    // Parse the selected channel long ID (format: "R{superIndex}:{channelIndex} {type}"
+    // or "T{superIndex}:{channelIndex} {type}") to obtain device set and channel indices.
+    qint64 frequency = 0;
+    float power = 0.0f;
+
+    const QString& selectedChannel = m_settings.m_selectedChannel;
+    if (!selectedChannel.isEmpty())
+    {
+        const QChar kind = selectedChannel[0];
+        if (kind == 'R' || kind == 'T')
+        {
+            const int colonPos = selectedChannel.indexOf(':');
+            const int spacePos = selectedChannel.indexOf(' ', colonPos);
+            if (colonPos > 0 && spacePos > colonPos)
+            {
+                bool ok1, ok2;
+                const int superIndex = selectedChannel.mid(1, colonPos - 1).toInt(&ok1);
+                const int channelIndex = selectedChannel.mid(colonPos + 1, spacePos - colonPos - 1).toInt(&ok2);
+
+                if (ok1 && ok2)
+                {
+                    double centerFrequencyHz = 0.0;
+                    int offsetHz = 0;
+                    if (ChannelWebAPIUtils::getCenterFrequency(superIndex, centerFrequencyHz) &&
+                        ChannelWebAPIUtils::getFrequencyOffset(superIndex, channelIndex, offsetHz))
+                    {
+                        frequency = qRound64(centerFrequencyHz) + static_cast<qint64>(offsetHz);
+                    }
+
+                    double powerDb = 0.0;
+                    if (ChannelWebAPIUtils::getChannelReportValue(superIndex, channelIndex, "channelPowerDB", powerDb)) {
+                        power = static_cast<float>(powerDb);
+                    }
+                }
+            }
+        }
+    }
+
+    response.getFreqDisplayReport()->setFrequency(frequency);
+    response.getFreqDisplayReport()->setPower(power);
 }
 
 void FreqDisplay::networkManagerFinished(QNetworkReply *reply)
