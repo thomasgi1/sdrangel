@@ -17,6 +17,8 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 #include "SWGFeatureSettings.h"
+#include "SWGFreqDisplaySettings.h"
+#include "freqdisplay.h"
 #include "freqdisplaywebapiadapter.h"
 
 int FreqDisplayWebAPIAdapter::webapiSettingsGet(
@@ -26,7 +28,7 @@ int FreqDisplayWebAPIAdapter::webapiSettingsGet(
     (void) errorMessage;
     response.setFreqDisplaySettings(new SWGSDRangel::SWGFreqDisplaySettings());
     response.getFreqDisplaySettings()->init();
-    //FreqDisplay::webapiFormatFeatureSettings(response, m_settings);
+    FreqDisplay::webapiFormatFeatureSettings(response, m_settings);
 
     return 200;
 }
@@ -39,7 +41,7 @@ int FreqDisplayWebAPIAdapter::webapiSettingsPutPatch(
 {
     (void) force; // no action
     (void) errorMessage;
-    //FreqDisplay::webapiUpdateFeatureSettings(m_settings, featureSettingsKeys, response);
+    FreqDisplay::webapiUpdateFeatureSettings(m_settings, featureSettingsKeys, response);
 
     return 200;
 }

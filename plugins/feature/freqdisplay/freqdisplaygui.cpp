@@ -110,6 +110,35 @@ void FreqDisplayGUI::destroy()
     delete this;
 }
 
+bool FreqDisplayGUI::handleMessage(const Message& message)
+{
+    if (FreqDisplay::MsgConfigureFreqDisplay::match(message))
+    {
+        qDebug("FreqDisplayGUI::handleMessage: FreqDisplay::MsgConfigureFreqDisplay");
+        const FreqDisplay::MsgConfigureFreqDisplay& cfg = (FreqDisplay::MsgConfigureFreqDisplay&) message;
+        m_settings = cfg.getSettings();
+        m_doApplySettings = false;
+        displaySettings();
+        m_doApplySettings = true;
+        updateFrequencyText();
+        return true;
+    }
+
+    return false;
+}
+
+void FreqDisplayGUI::handleInputMessages()
+{
+    Message* message;
+
+    while ((message = getInputMessageQueue()->pop()))
+    {
+        if (handleMessage(*message)) {
+            delete message;
+        }
+    }
+}
+
 void FreqDisplayGUI::resetToDefaults()
 {
     m_settings.resetToDefaults();
@@ -175,6 +204,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
 
     m_freqDisplay->setMessageQueueToGUI(&m_inputMessageQueue);
     m_settings = m_freqDisplay->getSettings();
+    connect(getInputMessageQueue(), SIGNAL(messageEnqueued()), this, SLOT(handleInputMessages()));
 
     connect(
         &m_availableChannelOrFeatureHandler,

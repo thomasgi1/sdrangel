@@ -92,6 +92,8 @@ public:
     static FreqDisplayGUI* create(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature);
     void destroy() override;
 
+    bool handleMessage(const Message& message) override;
+
     void resetToDefaults() override;
     QByteArray serialize() const override;
     bool deserialize(const QByteArray& data) override;
@@ -162,6 +164,7 @@ private:
 private slots:
     void onMenuDialogCalled(const QPoint &p);
     void onWidgetRolled(QWidget* widget, bool rollDown);
+    void handleInputMessages();
     void channelsOrFeaturesChanged(const QStringList& renameFrom, const QStringList& renameTo, const QStringList& removed, const QStringList& added);
     void on_channels_currentIndexChanged(int index);
     void on_displayMode_currentIndexChanged(int index);
