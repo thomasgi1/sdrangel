@@ -101,8 +101,6 @@ public:
         const QStringList& featureSettingsKeys,
         SWGSDRangel::SWGFeatureSettings& response);
 
-    const FreqDisplaySettings& getSettings() const { return m_settings; }
-
     static const char* const m_featureIdURI;
     static const char* const m_featureId;
 

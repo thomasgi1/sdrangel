@@ -82,12 +82,19 @@ QByteArray FreqDisplay::serialize() const
 
 bool FreqDisplay::deserialize(const QByteArray& data)
 {
-    if (!m_settings.deserialize(data)) {
+    if (m_settings.deserialize(data))
+    {
+        auto *msg = MsgConfigureFreqDisplay::create(m_settings, QList<QString>(), true);
+        m_inputMessageQueue.push(msg);
+        return true;
+    }
+    else
+    {
         m_settings.resetToDefaults();
+        auto *msg = MsgConfigureFreqDisplay::create(m_settings, QList<QString>(), true);
+        m_inputMessageQueue.push(msg);
         return false;
     }
-
-    return true;
 }
 
 void FreqDisplay::applySettings(const FreqDisplaySettings& settings, const QStringList& settingsKeys, bool force)

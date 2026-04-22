@@ -146,6 +146,7 @@ private:
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     ~FreqDisplayGUI() override;
 
+    void blockApplySettings(bool block);
     void displaySettings();
     void applySetting(const QString& settingsKey);
     void applySettings(const QStringList& settingsKeys, bool force = false);

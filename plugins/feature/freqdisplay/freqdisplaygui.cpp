@@ -116,10 +116,14 @@ bool FreqDisplayGUI::handleMessage(const Message& message)
     {
         qDebug("FreqDisplayGUI::handleMessage: FreqDisplay::MsgConfigureFreqDisplay");
         const FreqDisplay::MsgConfigureFreqDisplay& cfg = (FreqDisplay::MsgConfigureFreqDisplay&) message;
-        m_settings = cfg.getSettings();
-        m_doApplySettings = false;
+        if (cfg.getForce()) {
+            m_settings = cfg.getSettings();
+        } else {
+            m_settings.applySettings(cfg.getSettingsKeys(), cfg.getSettings());
+        }
+        blockApplySettings(true);
         displaySettings();
-        m_doApplySettings = true;
+        blockApplySettings(false);
         updateFrequencyText();
         return true;
     }
@@ -203,7 +207,6 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     ui->frequencyValue->setWordWrap(false); // If true, RollupContents::arrangeRollups uses heightForWidth rather than minimumSizeHint
 
     m_freqDisplay->setMessageQueueToGUI(&m_inputMessageQueue);
-    m_settings = m_freqDisplay->getSettings();
     connect(getInputMessageQueue(), SIGNAL(messageEnqueued()), this, SLOT(handleInputMessages()));
 
     connect(
@@ -224,6 +227,7 @@ FreqDisplayGUI::FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet,
     m_settings.setRollupState(&m_rollupState);
 
     displaySettings();
+    applyAllSettings();
     updateFrequencyText();
     m_resizer.enableChildMouseTracking();
 }
@@ -248,42 +252,27 @@ void FreqDisplayGUI::setWorkspaceIndex(int index)
     m_feature->setWorkspaceIndex(index);
 }
 
+void FreqDisplayGUI::blockApplySettings(bool block)
+{
+    m_doApplySettings = !block;
+}
+
 void FreqDisplayGUI::displaySettings()
 {
     setTitleColor(m_settings.m_rgbColor);
     setWindowTitle(m_settings.m_title);
     setTitle(m_settings.m_title);
+    blockApplySettings(true);
 
-    // Populate font combo box with the saved font (or system default if empty)
-    ui->fontFamily->blockSignals(true);
     if (!m_settings.m_fontName.isEmpty()) {
         ui->fontFamily->setCurrentFont(QFont(m_settings.m_fontName));
     }
-    ui->fontFamily->blockSignals(false);
-
-    ui->displayMode->blockSignals(true);
     ui->displayMode->setCurrentIndex(static_cast<int>(m_settings.m_displayMode));
-    ui->displayMode->blockSignals(false);
-
-    ui->speech->blockSignals(true);
     ui->speech->setChecked(m_settings.m_speechEnabled);
-    ui->speech->blockSignals(false);
-
-    ui->transparentBackground->blockSignals(true);
     ui->transparentBackground->setChecked(m_settings.m_transparentBackground);
-    ui->transparentBackground->blockSignals(false);
-
-    ui->frequencyUnits->blockSignals(true);
     ui->frequencyUnits->setCurrentIndex(static_cast<int>(m_settings.m_frequencyUnits));
-    ui->frequencyUnits->blockSignals(false);
-
-    ui->showUnits->blockSignals(true);
     ui->showUnits->setChecked(m_settings.m_showUnits);
-    ui->showUnits->blockSignals(false);
-
-    ui->powerDecimalPlaces->blockSignals(true);
     ui->powerDecimalPlaces->setValue(m_settings.m_powerDecimalPlaces);
-    ui->powerDecimalPlaces->blockSignals(false);
 
     // Must come after frequencyUnits is set so the range/enabled state is correct
     updateFreqDecimalSpinbox();
@@ -291,9 +280,9 @@ void FreqDisplayGUI::displaySettings()
     updateTextColorButton();
     updateDropShadowColorButton();
 
-    ui->dropShadow->blockSignals(true);
     ui->dropShadow->setChecked(m_settings.m_dropShadowEnabled);
-    ui->dropShadow->blockSignals(false);
+
+    blockApplySettings(false);
 
     applyTransparency();
     applyTextColor();
