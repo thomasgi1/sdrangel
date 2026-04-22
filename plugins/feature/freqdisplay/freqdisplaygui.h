@@ -93,7 +93,6 @@ public:
     void destroy() override;
 
     bool handleMessage(const Message& message);
-    void makeUIConnections();
 
     void resetToDefaults() override;
     QByteArray serialize() const override;
@@ -125,8 +124,6 @@ private:
 #ifdef QT_TEXTTOSPEECH_FOUND
     QTextToSpeech *m_speech = nullptr;
     QString m_pendingSpeechText; ///< Most recent text to speak once the engine is no longer busy
-    /// Expands display-text unit abbreviations to full spoken words so that TTS
-    /// engines read them naturally rather than letter-by-letter.
     static QString textForSpeech(const QString& displayText);
 #endif
 
@@ -146,6 +143,7 @@ private:
     explicit FreqDisplayGUI(PluginAPI* pluginAPI, FeatureUISet *featureUISet, Feature *feature, QWidget* parent = nullptr);
     ~FreqDisplayGUI() override;
 
+    void makeUIConnections();
     void blockApplySettings(bool block);
     void displaySettings();
     void applySetting(const QString& settingsKey);
