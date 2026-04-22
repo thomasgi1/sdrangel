@@ -30,8 +30,16 @@ public:
 
     QByteArray serialize() const override { return m_settings.serialize(); }
     bool deserialize(const QByteArray& data) override { return m_settings.deserialize(data); }
-    void setSettings(const FreqDisplaySettings& settings) { m_settings = settings; }
-    const FreqDisplaySettings& getSettings() const { return m_settings; }
+
+    int webapiSettingsGet(
+        SWGSDRangel::SWGFeatureSettings& response,
+        QString& errorMessage) override;
+
+    int webapiSettingsPutPatch(
+        bool force,
+        const QStringList& featureSettingsKeys,
+        SWGSDRangel::SWGFeatureSettings& response,
+        QString& errorMessage) override;
 
 private:
     FreqDisplaySettings m_settings;

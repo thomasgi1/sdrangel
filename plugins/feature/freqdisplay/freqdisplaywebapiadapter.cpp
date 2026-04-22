@@ -16,4 +16,30 @@
 // along with this program. If not, see <http://www.gnu.org/licenses/>.          //
 ///////////////////////////////////////////////////////////////////////////////////
 
+#include "SWGFeatureSettings.h"
 #include "freqdisplaywebapiadapter.h"
+
+int FreqDisplayWebAPIAdapter::webapiSettingsGet(
+    SWGSDRangel::SWGFeatureSettings& response,
+    QString& errorMessage)
+{
+    (void) errorMessage;
+    response.setFreqDisplaySettings(new SWGSDRangel::SWGFreqDisplaySettings());
+    response.getFreqDisplaySettings()->init();
+    //FreqDisplay::webapiFormatFeatureSettings(response, m_settings);
+
+    return 200;
+}
+
+int FreqDisplayWebAPIAdapter::webapiSettingsPutPatch(
+    bool force,
+    const QStringList& featureSettingsKeys,
+    SWGSDRangel::SWGFeatureSettings& response,
+    QString& errorMessage)
+{
+    (void) force; // no action
+    (void) errorMessage;
+    //FreqDisplay::webapiUpdateFeatureSettings(m_settings, featureSettingsKeys, response);
+
+    return 200;
+}
