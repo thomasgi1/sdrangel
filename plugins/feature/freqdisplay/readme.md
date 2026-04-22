@@ -74,3 +74,9 @@ Check to enable a drop shadow behind the frequency and power text, which can imp
 <h3>12: Drop Shadow Colour</h3>
 
 Select the colour for the drop shadow used behind the frequency and power text.
+
+<h2>API</h2>
+
+Full details of the API can be found in the Swagger documentation. Here is a quick example of how to set the display mode (2) to Power:
+
+    curl -X PATCH "http://127.0.0.1:8091/sdrangel/featureset/feature/0/settings" -d '{"featureType": "FreqDisplay",  "FreqDisplaySettings": { "displayMode": 1 }}'
