@@ -30,6 +30,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QBuffer>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include <algorithm>
 #include <array>
@@ -537,6 +539,165 @@ void MeshtasticDemod::stop()
     m_pipelineConfigs.clear();
 }
 
+namespace {
+
+QString syncWordToPacketType(uint8_t syncWord)
+{
+    switch (syncWord)
+    {
+    case 0x2B: return QStringLiteral("meshtastic");
+    case 0x12: return QStringLiteral("lorawan");
+    case 0x43: return QStringLiteral("helium");
+    case 0x00: return QStringLiteral("unset");
+    default:   return QStringLiteral("custom");
+    }
+}
+
+QString parityStatusToStr(int status)
+{
+    switch (status)
+    {
+    case (int) MeshtasticDemodSettings::ParityOK:        return QStringLiteral("ok");
+    case (int) MeshtasticDemodSettings::ParityCorrected: return QStringLiteral("fix");
+    case (int) MeshtasticDemodSettings::ParityError:     return QStringLiteral("err");
+    default:                                              return QStringLiteral("n/a");
+    }
+}
+
+QString getMeshField(const modemmeshtastic::DecodeResult& result, const QString& path)
+{
+    for (const auto& field : result.fields)
+    {
+        if (field.path == path) {
+            return field.value;
+        }
+    }
+    return QString();
+}
+
+} // namespace
+
+QString MeshtasticDemod::buildMeshtasticJsonPacket(
+    const MeshtasticDemodMsg::MsgReportDecodeBytes& msg,
+    const modemmeshtastic::DecodeResult& meshResult) const
+{
+    QJsonObject root;
+
+    // Timestamps
+    const QDateTime now = QDateTime::currentDateTime();
+    root["timestamp"]      = now.toString("yyyy-MM-ddTHH:mm:ss.zzz");
+    root["timestamp_unix"] = now.toMSecsSinceEpoch();
+
+    // RF
+    QJsonObject rf;
+    rf["center_freq_hz"]  = static_cast<qint64>(
+        m_basebandCenterFrequency + m_settings.m_inputFrequencyOffset);
+    rf["bandwidth_hz"]    = MeshtasticDemodSettings::bandwidths[m_settings.m_bandwidthIndex];
+    rf["spreading_factor"] = m_settings.m_spreadFactor;
+    rf["signal_db"]       = msg.getSingalDb();
+    rf["noise_db"]        = msg.getNoiseDb();
+    rf["snr_db"]          = msg.getSingalDb() - msg.getNoiseDb();
+    root["rf"] = rf;
+
+    // LoRa
+    const uint8_t syncWord  = static_cast<uint8_t>(msg.getSyncWord());
+    const QString packetType = syncWordToPacketType(syncWord);
+
+    QJsonObject lora;
+    lora["packet_type"]  = packetType;
+    lora["sync_word"]    = QString("0x%1").arg(syncWord, 2, 16, QChar('0'));
+    lora["frame_id"]     = QString("0x%1").arg(msg.getFrameId(), 0, 16);
+    lora["header_fec"]   = parityStatusToStr(msg.getHeaderParityStatus());
+    lora["header_crc"]   = msg.getHeaderCRCStatus() ? QStringLiteral("ok") : QStringLiteral("err");
+
+    if (msg.getEarlyEOM())
+    {
+        lora["payload_fec"] = QStringLiteral("n/a");
+        lora["payload_crc"] = QStringLiteral("n/a");
+    }
+    else
+    {
+        lora["payload_fec"] = parityStatusToStr(msg.getPayloadParityStatus());
+        lora["payload_crc"] = msg.getPayloadCRCStatus() ? QStringLiteral("ok") : QStringLiteral("err");
+    }
+
+    lora["early_eom"]     = msg.getEarlyEOM();
+    lora["packet_length"] = static_cast<int>(msg.getPacketSize());
+    lora["nb_symbols"]    = static_cast<int>(msg.getNbSymbols());
+    lora["nb_codewords"]  = static_cast<int>(msg.getNbCodewords());
+    lora["payload_hex"]   = QString(msg.getBytes().left(
+        static_cast<int>(msg.getPacketSize())).toHex());
+    root["lora"] = lora;
+
+    // Meshtastic section — only for sync word 0x2B
+    if (syncWord == 0x2B)
+    {
+        QJsonObject mesh;
+
+        const QString channelHash = getMeshField(meshResult, "header.channel_hash");
+        mesh["channel_hash"] = channelHash.isEmpty() ? QStringLiteral("unknown") : channelHash;
+
+        const QString decodePath = getMeshField(meshResult, "decode.path");
+        const QString keyLabel   = getMeshField(meshResult, "decode.key_label");
+
+        QString decryption;
+        QString keyLabelOut;
+
+        if (decodePath == QStringLiteral("plain"))
+        {
+            decryption  = QStringLiteral("plaintext");
+            keyLabelOut = QStringLiteral("no_key");
+            mesh["hash_matching_index"] = QStringLiteral("none");
+        }
+        else if (decodePath == QStringLiteral("aes_ctr_be"))
+        {
+            decryption  = QStringLiteral("decrypted");
+            keyLabelOut = keyLabel.isEmpty() ? QStringLiteral("unknown_key") : keyLabel;
+            mesh["hash_matching_index"] = 0;
+        }
+        else
+        {
+            decryption  = QStringLiteral("not_decrypted");
+            keyLabelOut = QStringLiteral("unknown_key");
+            mesh["hash_matching_index"] = QStringLiteral("none");
+        }
+
+        mesh["decryption"] = decryption;
+        mesh["key_label"]  = keyLabelOut;
+        mesh["parsed"]     = meshResult.dataDecoded;
+
+        if (meshResult.dataDecoded)
+        {
+            mesh["channel_type"] = m_settings.m_meshtasticPresetName;
+
+            const QString hopStart  = getMeshField(meshResult, "header.hop_start");
+            const QString hopLimit  = getMeshField(meshResult, "header.hop_limit");
+            const QString relayNode = getMeshField(meshResult, "header.relay_node");
+
+            if (!hopStart.isEmpty())  { mesh["hop_start"]     = hopStart.toInt(); }
+            if (!hopLimit.isEmpty())  { mesh["hop_limit"]     = hopLimit.toInt(); }
+            if (!hopStart.isEmpty() && !hopLimit.isEmpty()) {
+                mesh["hops_consumed"] = hopStart.toInt() - hopLimit.toInt();
+            }
+            if (!relayNode.isEmpty()) { mesh["relay_node"]    = relayNode.toInt(); }
+
+            QJsonObject fields;
+            for (const auto& field : meshResult.fields)
+            {
+                if (field.path.startsWith(QStringLiteral("decode."))) {
+                    continue;
+                }
+                fields[field.path] = field.value;
+            }
+            mesh["fields"] = fields;
+        }
+
+        root["meshtastic"] = mesh;
+    }
+
+    return QString(QJsonDocument(root).toJson(QJsonDocument::Indented));
+}
+
 bool MeshtasticDemod::handleMessage(const Message& cmd)
 {
 	if (MsgConfigureMeshtasticDemod::match(cmd))
@@ -672,6 +833,15 @@ bool MeshtasticDemod::handleMessage(const Message& cmd)
                 MainCore::MsgPacket *msg = MainCore::MsgPacket::create(this, packet, QDateTime::currentDateTime());
                 messageQueue->push(msg);
             }
+        }
+
+        if (m_settings.m_sendJsonViaUDP)
+        {
+            const QString json = buildMeshtasticJsonPacket(msg, meshResult);
+            const QByteArray jsonBytes = json.toUtf8();
+            m_udpSink.writeUnbuffered(
+                reinterpret_cast<const uint8_t*>(jsonBytes.constData()),
+                jsonBytes.size());
         }
 
         return true;
