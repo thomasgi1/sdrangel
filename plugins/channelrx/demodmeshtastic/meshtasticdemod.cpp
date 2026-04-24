@@ -784,6 +784,7 @@ void MeshtasticDemod::applySettings(MeshtasticDemodSettings settings, bool force
             << " m_packetLength: " << settings.m_packetLength
             << " m_autoNbSymbolsMax: " << MeshtasticDemodSettings::m_autoNbSymbolsMax
             << " m_sendViaUDP: " << settings.m_sendViaUDP
+            << " m_sendJsonViaUDP: " << settings.m_sendJsonViaUDP
             << " m_udpAddress: " << settings.m_udpAddress
             << " m_udpPort: " << settings.m_udpPort
             << " m_meshtasticKeySpecList: " << settings.m_meshtasticKeySpecList
@@ -851,6 +852,9 @@ void MeshtasticDemod::applySettings(MeshtasticDemodSettings settings, bool force
     }
     if ((settings.m_sendViaUDP != m_settings.m_sendViaUDP) || force) {
         reverseAPIKeys.append("sendViaUDP");
+    }
+    if ((settings.m_sendJsonViaUDP != m_settings.m_sendJsonViaUDP) || force) {
+        reverseAPIKeys.append("sendJsonViaUDP");
     }
     if ((settings.m_invertRamps != m_settings.m_invertRamps) || force) {
         reverseAPIKeys.append("invertRamps");
@@ -1030,6 +1034,9 @@ void MeshtasticDemod::webapiUpdateChannelSettings(
     if (channelSettingsKeys.contains("sendViaUDP")) {
         settings.m_sendViaUDP = response.getMeshtasticDemodSettings()->getSendViaUdp() != 0;
     }
+    if (channelSettingsKeys.contains("sendJsonViaUDP")) {
+        settings.m_sendJsonViaUDP = response.getMeshtasticDemodSettings()->getSendJsonViaUdp() != 0;
+    }
     if (channelSettingsKeys.contains("udpAddress")) {
         settings.m_udpAddress = *response.getMeshtasticDemodSettings()->getUdpAddress();
     }
@@ -1100,6 +1107,7 @@ void MeshtasticDemod::webapiFormatChannelSettings(SWGSDRangel::SWGChannelSetting
     response.getMeshtasticDemodSettings()->setNbParityBits(settings.m_nbParityBits);
     response.getMeshtasticDemodSettings()->setPacketLength(settings.m_packetLength);
     response.getMeshtasticDemodSettings()->setSendViaUdp(settings.m_sendViaUDP ? 1 : 0);
+    response.getMeshtasticDemodSettings()->setSendJsonViaUdp(settings.m_sendJsonViaUDP ? 1 : 0);
     response.getMeshtasticDemodSettings()->setInvertRamps(settings.m_invertRamps ? 1 : 0);
 
     if (response.getMeshtasticDemodSettings()->getUdpAddress()) {
@@ -1304,6 +1312,9 @@ void MeshtasticDemod::webapiFormatChannelSettings(
     }
     if (channelSettingsKeys.contains("sendViaUDP") || force) {
         swgMeshtasticDemodSettings->setSendViaUdp(settings.m_sendViaUDP ? 1 : 0);
+    }
+    if (channelSettingsKeys.contains("sendJsonViaUDP") || force) {
+        swgMeshtasticDemodSettings->setSendJsonViaUdp(settings.m_sendJsonViaUDP ? 1 : 0);
     }
     if (channelSettingsKeys.contains("udpAddress") || force) {
         swgMeshtasticDemodSettings->setUdpAddress(new QString(settings.m_udpAddress));
