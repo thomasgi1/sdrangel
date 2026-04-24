@@ -606,7 +606,6 @@ QString MeshtasticDemod::buildMeshtasticJsonPacket(
     QJsonObject lora;
     lora["packet_type"]  = packetType;
     lora["sync_word"]    = QString("0x%1").arg(syncWord, 2, 16, QChar('0'));
-    lora["frame_id"]     = QString("0x%1").arg(msg.getFrameId(), 0, 16);
     lora["header_fec"]   = parityStatusToStr(msg.getHeaderParityStatus());
     lora["header_crc"]   = msg.getHeaderCRCStatus() ? QStringLiteral("ok") : QStringLiteral("err");
 
@@ -636,6 +635,9 @@ QString MeshtasticDemod::buildMeshtasticJsonPacket(
 
         const QString channelHash = getMeshField(meshResult, "header.channel_hash");
         mesh["channel_hash"] = channelHash.isEmpty() ? QStringLiteral("unknown") : channelHash;
+
+        const QString packetId = getMeshField(meshResult, "header.id");
+        mesh["packet_id"] = packetId.isEmpty() ? QStringLiteral("unknown") : packetId;
 
         const QString decodePath = getMeshField(meshResult, "decode.path");
         const QString keyLabel   = getMeshField(meshResult, "decode.key_label");
