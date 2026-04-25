@@ -632,12 +632,59 @@ QString MeshtasticDemod::buildMeshtasticJsonPacket(
     if (syncWord == 0x2B)
     {
         QJsonObject mesh;
+        const bool headerCrcOk = msg.getHeaderCRCStatus();
 
         const QString channelHash = getMeshField(meshResult, "header.channel_hash");
-        mesh["channel_hash"] = channelHash.isEmpty() ? QStringLiteral("unknown") : channelHash;
+        if (headerCrcOk && !channelHash.isEmpty()) {
+            mesh["channel_hash"] = channelHash;
+        } else {
+            mesh["channel_hash"] = QStringLiteral("unknown");
+        }
 
         const QString packetId = getMeshField(meshResult, "header.id");
-        mesh["packet_id"] = packetId.isEmpty() ? QStringLiteral("unknown") : packetId;
+        if (headerCrcOk && !packetId.isEmpty()) {
+            mesh["packet_id"] = packetId;
+        } else {
+            mesh["packet_id"] = QStringLiteral("unknown");
+        }
+
+        const QString hopStart  = getMeshField(meshResult, "header.hop_start");
+        const QString hopLimit  = getMeshField(meshResult, "header.hop_limit");
+        const QString relayNode = getMeshField(meshResult, "header.relay_node");
+
+        if (headerCrcOk)
+        {
+            if (!hopStart.isEmpty()) {
+                mesh["hop_start"] = hopStart.toInt();
+            } else {
+                mesh["hop_start"] = QStringLiteral("unknown");
+            }
+
+            if (!hopLimit.isEmpty()) {
+                mesh["hop_limit"] = hopLimit.toInt();
+            } else {
+                mesh["hop_limit"] = QStringLiteral("unknown");
+            }
+
+            if (!hopStart.isEmpty() && !hopLimit.isEmpty()) {
+                mesh["hops_consumed"] = hopStart.toInt() - hopLimit.toInt();
+            } else {
+                mesh["hops_consumed"] = QStringLiteral("unknown");
+            }
+
+            if (!relayNode.isEmpty()) {
+                mesh["relay_node"] = relayNode.toInt();
+            } else {
+                mesh["relay_node"] = QStringLiteral("unknown");
+            }
+        }
+        else
+        {
+            mesh["hop_start"] = QStringLiteral("unknown");
+            mesh["hop_limit"] = QStringLiteral("unknown");
+            mesh["hops_consumed"] = QStringLiteral("unknown");
+            mesh["relay_node"] = QStringLiteral("unknown");
+        }
 
         const QString decodePath = getMeshField(meshResult, "decode.path");
         const QString keyLabel   = getMeshField(meshResult, "decode.key_label");
@@ -671,17 +718,6 @@ QString MeshtasticDemod::buildMeshtasticJsonPacket(
         if (meshResult.dataDecoded)
         {
             mesh["channel_type"] = m_settings.m_meshtasticPresetName;
-
-            const QString hopStart  = getMeshField(meshResult, "header.hop_start");
-            const QString hopLimit  = getMeshField(meshResult, "header.hop_limit");
-            const QString relayNode = getMeshField(meshResult, "header.relay_node");
-
-            if (!hopStart.isEmpty())  { mesh["hop_start"]     = hopStart.toInt(); }
-            if (!hopLimit.isEmpty())  { mesh["hop_limit"]     = hopLimit.toInt(); }
-            if (!hopStart.isEmpty() && !hopLimit.isEmpty()) {
-                mesh["hops_consumed"] = hopStart.toInt() - hopLimit.toInt();
-            }
-            if (!relayNode.isEmpty()) { mesh["relay_node"]    = relayNode.toInt(); }
 
             QJsonObject fields;
             for (const auto& field : meshResult.fields)
