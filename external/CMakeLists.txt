@@ -864,7 +864,11 @@ if(ENABLE_FEATURE_STARTRACKER)
     elseif (LINUX)
         # We need a shared library on Linux, as the static library has non PIC code, and we need to link it into a shared library
         set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/lib${LIB_SUFFIX}/libcspice.so" CACHE INTERNAL "")
-        set(CSPICE_ARGS "-DCSPICE_BUILD_STATIC_LIBRARY=OFF")
+        # Disable -Werror=format-security for cspice only: distro hardening flags (e.g. Ubuntu Noble)
+        # inject -Werror=format-security which fails cspice sources that lack -Wformat.
+        set(CSPICE_ARGS "-DCSPICE_BUILD_STATIC_LIBRARY=OFF"
+                        "-DCMAKE_C_FLAGS=-Wno-error=format-security"
+                        "-DCMAKE_CXX_FLAGS=-Wno-error=format-security")
     elseif (APPLE)
         set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/cspice/src/cspice-build/lib/libcspice.a" CACHE INTERNAL "")
     endif()
