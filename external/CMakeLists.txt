@@ -863,7 +863,13 @@ if(ENABLE_FEATURE_STARTRACKER)
         set(CSPICE_LIBRARIES "${SDRANGEL_BINARY_LIB_DIR}/cspice.lib" CACHE INTERNAL "")
     elseif (LINUX)
         # We need a shared library on Linux, as the static library has non PIC code, and we need to link it into a shared library
-        set(CSPICE_LIBRARIES "${EXTERNAL_BUILD_LIBRARIES}/lib${LIB_SUFFIX}/libcspice.so" CACHE INTERNAL "")
+        # ExternalProject cspice currently outputs libcspice.so under
+        #   ${EXTERNAL_BUILD_LIBRARIES}/cspice/src/cspice-build/lib/libcspice.so
+        # so point CSPICE_LIBRARIES there.
+        set(CSPICE_LIBRARIES
+            "${EXTERNAL_BUILD_LIBRARIES}/cspice/src/cspice-build/lib/libcspice.so"
+            CACHE INTERNAL ""
+        )
         # Disable -Werror=format-security for cspice only: distro hardening flags (e.g. Ubuntu Noble)
         # inject -Werror=format-security which fails cspice sources that lack -Wformat.
         set(CSPICE_ARGS "-DCSPICE_BUILD_STATIC_LIBRARY=OFF"
